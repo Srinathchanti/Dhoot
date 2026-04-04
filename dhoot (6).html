@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DHOOT — Shift & Payroll</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f2f7;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:99px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-12px);}to{opacity:1;transform:none;}}
+@keyframes toastIn{from{opacity:0;transform:translateX(100%);}to{opacity:1;transform:none;}}
+.fade-up{animation:fadeUp .25s ease both;}
+.slide-right{animation:slideRight .2s ease both;}
+.toast-in{animation:toastIn .3s cubic-bezier(.16,1,.3,1) both;}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.5;}
+.drag-handle{cursor:grab;}.drag-handle:active{cursor:grabbing;}
+.dragging-widget{opacity:.3;transform:scale(.97);}
+.drop-target{outline:2px dashed #6366f1;outline-offset:4px;border-radius:16px;}
+.nav-link{transition:all .15s;}
+.nav-link.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 4px 15px rgba(99,102,241,.35);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useContext,createContext,useCallback,useMemo,useRef} = React;
+
+// ──────────── CONSTANTS ────────────
+const ADMIN = { id:'admin', name:'Admin', email:'admin@dhoot.com', password:'admin123', role:'admin' };
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'];
+
+// ──────────── UTILS ────────────
+const payPeriodOf = (dateStr) => {
+  if (!dateStr) return '';
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  return d <= 15
+    ? `${y}-${String(m).padStart(2,'0')}-01-15`
+    : `${y}-${String(m).padStart(2,'0')}-16-${lastDay}`;
+};
+
+const fmtPP = (pp) => {
+  if (!pp) return '—';
+  const parts = pp.split('-');
+  const y=parts[0], m=parseInt(parts[1])-1, s=parseInt(parts[2]), e=parseInt(parts[3]);
+  return `${MONTHS_SHORT[m]} ${s}–${e}, ${y}`;
+};
+
+const calcHours = (start, end) => {
+  if (!start || !end) return 0;
+  const [sh,sm] = start.split(':').map(Number);
+  const [eh,em] = end.split(':').map(Number);
+  let mins = (eh*60+em) - (sh*60+sm);
+  if (mins <= 0) mins += 1440;
+  return Math.round(mins * 10 / 60) / 10;
+};
+
+const calcPay = (hours, rate) => {
+  const reg = Math.min(hours, 80);
+  const ot  = Math.max(0, hours - 80);
+  return Math.round((reg * rate + ot * rate * 1.5) * 100) / 100;
+};
+
+const nextPayday = () => {
+  const now = new Date();
+  const d = now.getDate(), m = now.getMonth(), y = now.getFullYear();
+  const target = d <= 15 ? new Date(y,m,15) : new Date(y,m+1,0);
+  const days = Math.max(0, Math.ceil((target - now) / 86400000));
+  return { label: target.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}), days };
+};
+
+const curPP = () => payPeriodOf(new Date().toISOString().split('T')[0]);
+
+const money = (n) => '$' + (+(n||0)).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const hrs   = (h) => (Math.round((h||0)*10)/10) + 'h';
+const uid   = () => Math.random().toString(36).slice(2,10);
+
+// ──────────── STORAGE ────────────
+const store = {
+  get: (k,def=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  del: (k)   => localStorage.removeItem(k),
+};
+
+const getUsers   = ()  => store.get('dh4_users',   []);
+const getShifts  = ()  => store.get('dh4_shifts',  []);
+const getPayroll = ()  => store.get('dh4_payroll', []);
+
+// ──────────── EXPORT CSV ────────────
+function downloadCSV(rows, filename) {
+  if (!rows || !rows.length) return false;
+  const headers = Object.keys(rows[0]);
+  const lines = [
+    headers.join(','),
+    ...rows.map(r => headers.map(h => {
+      const v = r[h] ?? '';
+      const s = String(v).replace(/"/g, '""');
+      return `"${s}"`;
+    }).join(','))
+  ];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+// ──────────── CONTEXTS ────────────
+const ToastCtx = createContext(null);
+const AuthCtx  = createContext(null);
+const DataCtx  = createContext(null);
+
+// ──────────── TOAST PROVIDER ────────────
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const push = useCallback((msg, type='success') => {
+    const id = uid();
+    setToasts(t => [...t.slice(-3), { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
+  }, []);
+
+  const typeStyles = {
+    success: 'bg-emerald-600 text-white',
+    error:   'bg-red-600 text-white',
+    warning: 'bg-amber-500 text-white',
+    info:    'bg-indigo-600 text-white',
+  };
+  const typeIcon = { success:'✓', error:'✕', warning:'!', info:'i' };
+
+  return (
+    <ToastCtx.Provider value={push}>
+      {children}
+      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none">
+        {toasts.map(t => (
+          <div key={t.id} className={`toast-in flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold min-w-[260px] max-w-sm pointer-events-auto ${typeStyles[t.type]}`}>
+            <span className="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-xs font-bold shrink-0">{typeIcon[t.type]}</span>
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </ToastCtx.Provider>
+  );
+}
+const useToast = () => useContext(ToastCtx);
+
+// ──────────── AUTH PROVIDER ────────────
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('dh4_sess') || 'null');
+      if (!s) return null;
+      if (s.role === 'admin') return s;
+      const emp = getUsers().find(u => u.id === s.id);
+      return (emp && emp.status === 'approved') ? s : null;
+    } catch { return null; }
+  });
+
+  const login = (email, password) => {
+    const e = (email || '').trim().toLowerCase();
+    if ((e === 'admin' || e === ADMIN.email) && password === ADMIN.password) {
+      const sess = { ...ADMIN };
+      localStorage.setItem('dh4_sess', JSON.stringify(sess));
+      setUser(sess);
+      return { ok: true };
+    }
+    const u = getUsers().find(u => u.email.toLowerCase() === e);
+    if (!u) return { ok:false, msg:'No account found with that email.' };
+    if (u.password !== password) return { ok:false, msg:'Incorrect password.' };
+    if (u.status === 'pending')  return { ok:false, msg:'Account pending admin approval.', warn:true };
+    if (u.status === 'rejected') return { ok:false, msg:'Account not approved. Contact your manager.' };
+    const sess = { id:u.id, name:u.name, email:u.email, role:'employee', empId:u.id, hourlyRate:u.hourlyRate, jobTitle:u.jobTitle };
+    localStorage.setItem('dh4_sess', JSON.stringify(sess));
+    setUser(sess);
+    return { ok: true };
+  };
+
+  const register = ({ name, email, password, hourlyRate, jobTitle, securityQuestion, securityAnswer }) => {
+    const e = (email||'').trim().toLowerCase();
+    if (e === ADMIN.email || e === 'admin') return { ok:false, msg:'Email not available.' };
+    const users = getUsers();
+    if (users.find(u => u.email.toLowerCase() === e)) return { ok:false, msg:'An account with this email already exists.' };
+    const emp = {
+      id: 'u' + uid(), name:(name||'').trim(), email:e, password,
+      hourlyRate: parseFloat(hourlyRate)||15, jobTitle:(jobTitle||''),
+      securityQuestion: (securityQuestion||'').trim(),
+      securityAnswer: (securityAnswer||'').trim().toLowerCase(),
+      role:'employee', status:'pending', createdAt:new Date().toISOString()
+    };
+    store.set('dh4_users', [...users, emp]);
+    return { ok:true, email:e };
+  };
+
+  const resetPassword = (email, answer, newPassword) => {
+    const e = (email||'').trim().toLowerCase();
+    const users = getUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === e);
+    if (idx === -1) return { ok:false, msg:'No account found with that email.' };
+    const u = users[idx];
+    if (!u.securityQuestion) return { ok:false, msg:'This account has no security question set. Contact admin.' };
+    if ((answer||'').trim().toLowerCase() !== u.securityAnswer) return { ok:false, msg:'Incorrect answer. Please try again.' };
+    users[idx] = { ...u, password: newPassword };
+    store.set('dh4_users', users);
+    return { ok:true };
+  };
+
+  const getSecurityQuestion = (email) => {
+    const e = (email||'').trim().toLowerCase();
+    const u = getUsers().find(u => u.email.toLowerCase() === e);
+    if (!u) return { ok:false, msg:'No account found with that email.' };
+    if (!u.securityQuestion) return { ok:false, msg:'No security question set for this account. Contact admin.' };
+    return { ok:true, question: u.securityQuestion };
+  };
+
+  const logout = () => {
+    localStorage.removeItem('dh4_sess');
+    setUser(null);
+  };
+
+  return <AuthCtx.Provider value={{ user, login, register, logout, resetPassword, getSecurityQuestion }}>{children}</AuthCtx.Provider>;
+}
+const useAuth = () => useContext(AuthCtx);
+
+// ──────────── DATA PROVIDER ────────────
+function DataProvider({ children }) {
+  const { user } = useAuth();
+  const toast    = useToast();
+
+  const [employees, setEmp] = useState([]);
+  const [shifts,    setSh]  = useState([]);
+  const [payroll,   setPr]  = useState([]);
+
+  const reload = useCallback(() => {
+    setEmp(getUsers().filter(u => u.role === 'employee'));
+    setSh(getShifts());
+    setPr(getPayroll());
+  }, []);
+
+  useEffect(() => { reload(); }, [user?.id]);
+
+  // SHIFTS
+  const addShift = (data) => {
+    const sh = { id:'s'+uid(), ...data, hours:calcHours(data.startTime,data.endTime), payPeriod:payPeriodOf(data.date), locked:false, createdAt:new Date().toISOString() };
+    const all = [...getShifts(), sh];
+    store.set('dh4_shifts', all); setSh(all);
+    toast('Shift added successfully!');
+  };
+  const editShift = (id, data) => {
+    const all = getShifts().map(s => s.id===id ? { ...s, ...data, hours:calcHours(data.startTime,data.endTime), payPeriod:payPeriodOf(data.date) } : s);
+    store.set('dh4_shifts', all); setSh(all);
+    toast('Shift updated!');
+  };
+  const delShift = (id) => {
+    const all = getShifts().filter(s => s.id!==id);
+    store.set('dh4_shifts', all); setSh(all);
+    toast('Shift deleted.', 'info');
+  };
+
+  // EMPLOYEES
+  const updateEmp = (id, data) => {
+    const all = getUsers().map(u => u.id===id ? { ...u, ...data } : u);
+    store.set('dh4_users', all);
+    setEmp(all.filter(u => u.role==='employee'));
+    toast('Employee updated!');
+  };
+  const approveEmp = (id) => { updateEmp(id, { status:'approved' }); toast('Employee approved!'); };
+  const rejectEmp  = (id) => { updateEmp(id, { status:'rejected' }); toast('Employee rejected.', 'warning'); };
+  const removeEmp  = (id) => {
+    const users = getUsers().filter(u => u.id!==id);
+    const sh    = getShifts().filter(s => s.empId!==id);
+    const pr    = getPayroll().filter(p => p.empId!==id);
+    store.set('dh4_users',users); store.set('dh4_shifts',sh); store.set('dh4_payroll',pr);
+    setEmp(users.filter(u=>u.role==='employee')); setSh(sh); setPr(pr);
+    toast('Employee removed.','info');
+  };
+
+  // PAYROLL
+  const genPayroll = (pp) => {
+    const approved = employees.filter(e=>e.status==='approved');
+    const ppShifts = shifts.filter(s=>s.payPeriod===pp);
+    const existing = getPayroll();
+    const recs = [];
+
+    approved.forEach(emp => {
+      const es = ppShifts.filter(s=>s.empId===emp.id);
+      if (!es.length) return;
+      const totalH = Math.round(es.reduce((a,s)=>a+(s.hours||0),0)*10)/10;
+      const reg    = Math.min(totalH, 80);
+      const ot     = Math.max(0, totalH-80);
+      const pay    = calcPay(totalH, emp.hourlyRate);
+      const exIdx  = existing.findIndex(p=>p.empId===emp.id&&p.payPeriod===pp);
+      const rec = {
+        id: exIdx>=0 ? existing[exIdx].id : 'p'+uid(),
+        empId:emp.id, empName:emp.name, empEmail:emp.email,
+        jobTitle:emp.jobTitle||'', payPeriod:pp,
+        totalHours:totalH, regularHours:Math.round(reg*10)/10,
+        overtimeHours:Math.round(ot*10)/10,
+        hourlyRate:emp.hourlyRate, regularPay:Math.round(reg*emp.hourlyRate*100)/100,
+        overtimePay:Math.round(ot*emp.hourlyRate*1.5*100)/100,
+        totalPay:pay,
+        status: exIdx>=0 ? existing[exIdx].status : 'pending',
+        createdAt: exIdx>=0 ? existing[exIdx].createdAt : new Date().toISOString(),
+      };
+      recs.push(rec);
+    });
+
+    if (!recs.length) { toast('No approved employees with shifts this period.','warning'); return 0; }
+    const merged = [...existing.filter(p=>!recs.find(r=>(r.empId===p.empId&&r.payPeriod===p.payPeriod))), ...recs];
+    store.set('dh4_payroll', merged); setPr(merged);
+    toast(`Payroll generated for ${fmtPP(pp)}!`);
+    return recs.length;
+  };
+
+  const markPaid = (id) => {
+    const all = getPayroll().map(p => p.id===id ? { ...p, status:'paid', paidAt:new Date().toISOString() } : p);
+    store.set('dh4_payroll',all); setPr(all);
+    // lock shifts in this pay period for this employee
+    const pr    = all.find(p=>p.id===id);
+    const shAll = getShifts().map(s => (s.empId===pr?.empId&&s.payPeriod===pr?.payPeriod) ? {...s,locked:true} : s);
+    store.set('dh4_shifts',shAll); setSh(shAll);
+    toast('Marked as paid! Shifts locked.','success');
+  };
+
+  // EXPORT SHIFTS
+  const exportShifts = (shiftList) => {
+    const rows = shiftList.map(s => {
+      const emp = employees.find(e=>e.id===s.empId);
+      return {
+        'Employee Name':  emp?.name || 'Unknown',
+        'Employee Email': emp?.email || '',
+        'Job Title':      emp?.jobTitle || '',
+        'Date':           s.date,
+        'Start Time':     s.startTime,
+        'End Time':       s.endTime,
+        'Hours Worked':   s.hours,
+        'Notes':          s.notes || '',
+        'Pay Period':     fmtPP(s.payPeriod),
+        'Status':         s.locked ? 'Locked' : 'Active',
+      };
+    });
+    const ok = downloadCSV(rows, `dhoot_shifts_${new Date().toISOString().split('T')[0]}.csv`);
+    ok ? toast('Shifts exported to CSV!') : toast('No shifts to export.','warning');
+  };
+
+  // EXPORT PAYROLL
+  const exportPayroll = (payList) => {
+    const rows = payList.map(p => ({
+      'Employee Name':    p.empName,
+      'Employee Email':   p.empEmail || '',
+      'Job Title':        p.jobTitle || '',
+      'Pay Period':       fmtPP(p.payPeriod),
+      'Regular Hours':    p.regularHours,
+      'Overtime Hours':   p.overtimeHours,
+      'Total Hours':      p.totalHours,
+      'Hourly Rate ($)':  p.hourlyRate,
+      'Regular Pay ($)':  p.regularPay,
+      'Overtime Pay ($)': p.overtimePay,
+      'Total Pay ($)':    p.totalPay,
+      'Status':           p.status,
+    }));
+    const ok = downloadCSV(rows, `dhoot_payroll_${new Date().toISOString().split('T')[0]}.csv`);
+    ok ? toast('Payroll exported to CSV!') : toast('No payroll to export.','warning');
+  };
+
+  return (
+    <DataCtx.Provider value={{ employees,shifts,payroll,addShift,editShift,delShift,updateEmp,approveEmp,rejectEmp,removeEmp,genPayroll,markPaid,exportShifts,exportPayroll,reload }}>
+      {children}
+    </DataCtx.Provider>
+  );
+}
+const useData = () => useContext(DataCtx);
+
+// ──────────── UI ATOMS ────────────
+const Btn = ({children,onClick,type='button',variant='primary',size='md',full=false,disabled=false,className=''}) => {
+  const base = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150 select-none outline-none ${full?'w-full':''} ${disabled?'opacity-50 pointer-events-none':''}`;
+  const sz = { xs:'px-2.5 py-1.5 text-xs', sm:'px-3.5 py-2 text-xs', md:'px-4 py-2.5 text-sm', lg:'px-6 py-3 text-sm' };
+  const v  = {
+    primary:   'bg-indigo-600 hover:bg-indigo-700 active:scale-[.98] text-white shadow-md shadow-indigo-200',
+    secondary: 'bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-sm',
+    success:   'bg-emerald-500 hover:bg-emerald-600 active:scale-[.98] text-white shadow-md shadow-emerald-200',
+    danger:    'bg-red-50 hover:bg-red-100 border border-red-200 text-red-600',
+    amber:     'bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700',
+    ghost:     'hover:bg-slate-100 text-slate-600',
+    export:    'bg-white hover:bg-green-50 border border-green-200 text-green-700 shadow-sm',
+  };
+  return <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${sz[size]} ${v[variant]} ${className}`}>{children}</button>;
+};
+
+const Field = ({ label, error, hint, className='', textarea=false, ...p }) => {
+  const base = `w-full border rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-150 bg-white focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100 ${error?'border-red-400 ring-2 ring-red-100':'border-slate-200'}`;
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {label && <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{label}</label>}
+      {textarea ? <textarea className={base+' resize-none'} {...p}/> : <input className={base} {...p}/>}
+      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+      {hint  && <p className="text-xs text-slate-400">{hint}</p>}
+    </div>
+  );
+};
+
+const Select = ({ label, children, className='', ...p }) => (
+  <div className={`flex flex-col gap-1.5 ${className}`}>
+    {label && <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{label}</label>}
+    <select className="w-full border border-slate-200 bg-white rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:ring-3 focus:ring-indigo-100 transition-all" {...p}>{children}</select>
+  </div>
+);
+
+const Modal = ({ open, onClose, title, subtitle, children, size='md', footer }) => {
+  if (!open) return null;
+  const w = { sm:'max-w-sm', md:'max-w-md', lg:'max-w-2xl', xl:'max-w-4xl' };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,.4)',backdropFilter:'blur(6px)'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className={`fade-up bg-white rounded-3xl shadow-2xl w-full ${w[size]} max-h-[92vh] flex flex-col overflow-hidden`}>
+        <div className="flex items-start justify-between px-7 pt-7 pb-5 border-b border-slate-100 shrink-0">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+            {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all text-xl leading-none mt-0.5">×</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-7 py-6">{children}</div>
+        {footer && <div className="px-7 pb-6 pt-2 border-t border-slate-100 shrink-0 flex gap-3 justify-end">{footer}</div>}
+      </div>
+    </div>
+  );
+};
+
+const Chip = ({ children, color='slate' }) => {
+  const c = {
+    slate:'bg-slate-100 text-slate-600', indigo:'bg-indigo-100 text-indigo-700',
+    green:'bg-emerald-100 text-emerald-700', yellow:'bg-yellow-100 text-yellow-800',
+    red:'bg-red-100 text-red-600', amber:'bg-amber-100 text-amber-800',
+    blue:'bg-blue-100 text-blue-700', purple:'bg-purple-100 text-purple-700',
+    pink:'bg-pink-100 text-pink-700',
+  };
+  return <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${c[color]}`}>{children}</span>;
+};
+
+const Avatar = ({ name='?', size='sm', color='#6366f1' }) => {
+  const s = { xs:'w-6 h-6 text-[10px]', sm:'w-8 h-8 text-xs', md:'w-10 h-10 text-sm', lg:'w-12 h-12 text-base' };
+  return (
+    <div className={`${s[size]} rounded-full flex items-center justify-center font-bold text-white shrink-0`} style={{background:color}}>
+      {(name||'?')[0].toUpperCase()}
+    </div>
+  );
+};
+
+const empColor = (idx) => COLORS[idx % COLORS.length];
+
+// Stat Card
+const StatCard = ({ icon, label, value, sub, accent='indigo', trend }) => {
+  const bg = { indigo:'bg-indigo-500', purple:'bg-purple-500', emerald:'bg-emerald-500', amber:'bg-amber-500', blue:'bg-blue-500', rose:'bg-rose-500' };
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-11 h-11 ${bg[accent]} rounded-xl flex items-center justify-center text-white text-xl shadow-lg`} style={{boxShadow:`0 4px 12px ${accent==='indigo'?'rgba(99,102,241,.4)':accent==='emerald'?'rgba(16,185,129,.4)':accent==='amber'?'rgba(245,158,11,.4)':'rgba(99,102,241,.4)'}`}}>{icon}</div>
+        {trend && <span className={`text-xs font-bold px-2 py-1 rounded-lg ${trend>0?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500'}`}>{trend>0?'↑':'↓'}{Math.abs(trend)}%</span>}
+      </div>
+      <div className="text-2xl font-black text-slate-900 tracking-tight">{value}</div>
+      <div className="text-sm font-medium text-slate-500 mt-1">{label}</div>
+      {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
+    </div>
+  );
+};
+
+// ──────────── LOGIN PAGE ────────────
+const SECURITY_QUESTIONS = [
+  "What was the name of your first pet?",
+  "What is your mother's maiden name?",
+  "What city were you born in?",
+  "What was the name of your primary school?",
+  "What is the name of the street you grew up on?",
+  "What was your childhood nickname?",
+  "What is the middle name of your oldest sibling?",
+  "What was the make of your first car?",
+];
+
+function LoginPage() {
+  const { login, register, resetPassword, getSecurityQuestion } = useAuth();
+  const toast = useToast();
+
+  // tab: 'login' | 'register' | 'forgot-email' | 'forgot-question' | 'forgot-reset'
+  const [tab, setTab] = useState('login');
+
+  const [form, setForm] = useState({
+    name:'', email:'', password:'', confirm:'',
+    hourlyRate:'15', jobTitle:'',
+    securityQuestion: SECURITY_QUESTIONS[0], securityAnswer:'',
+  });
+  const [errs, setErrs]     = useState({});
+  const [loading, setLoading] = useState(false);
+
+  // forgot-password state
+  const [fpEmail,    setFpEmail]    = useState('');
+  const [fpQuestion, setFpQuestion] = useState('');
+  const [fpAnswer,   setFpAnswer]   = useState('');
+  const [fpNewPass,  setFpNewPass]  = useState('');
+  const [fpConfirm,  setFpConfirm]  = useState('');
+  const [fpErr,      setFpErr]      = useState('');
+
+  const set = (k,v) => { setForm(f=>({...f,[k]:v})); setErrs(e=>({...e,[k]:''})); };
+  const goTab = (t) => { setTab(t); setErrs({}); setFpErr(''); };
+
+  // ── SIGN IN ──
+  const doLogin = async () => {
+    const e={};
+    if(!form.email)    e.email='Email is required';
+    if(!form.password) e.password='Password is required';
+    setErrs(e); if(Object.keys(e).length) return;
+    setLoading(true);
+    const r = login(form.email, form.password);
+    setLoading(false);
+    if (!r.ok) { toast(r.msg, r.warn?'warning':'error'); setErrs({password:r.msg}); }
+  };
+
+  // ── REGISTER ──
+  const doRegister = () => {
+    const e={};
+    if(!form.name)                   e.name='Name is required';
+    if(!form.email)                  e.email='Email is required';
+    if(!form.password)               e.password='Password is required';
+    if(form.password.length<4)       e.password='Minimum 4 characters';
+    if(form.password!==form.confirm) e.confirm='Passwords do not match';
+    if(!form.securityAnswer.trim())  e.securityAnswer='Please provide an answer';
+    setErrs(e); if(Object.keys(e).length) return;
+    const r = register(form);
+    if (!r.ok) { toast(r.msg,'error'); return; }
+    toast('Account created! Admin must approve before you can sign in.','info');
+    goTab('login');
+    setForm(f=>({...f,name:'',confirm:'',password:'',securityAnswer:''}));
+  };
+
+  // ── FORGOT — STEP 1: enter email ──
+  const doFpEmail = () => {
+    setFpErr('');
+    if(!fpEmail.trim()) { setFpErr('Please enter your email.'); return; }
+    const r = getSecurityQuestion(fpEmail);
+    if(!r.ok) { setFpErr(r.msg); return; }
+    setFpQuestion(r.question);
+    setFpAnswer(''); setFpNewPass(''); setFpConfirm('');
+    goTab('forgot-question');
+  };
+
+  // ── FORGOT — STEP 2: answer question ──
+  const doFpAnswer = () => {
+    setFpErr('');
+    if(!fpAnswer.trim()) { setFpErr('Please enter your answer.'); return; }
+    // just validate answer before moving to reset
+    const users = (()=>{ try{return JSON.parse(localStorage.getItem('dh4_users')||'[]');}catch{return [];} })();
+    const u = users.find(u=>u.email.toLowerCase()===(fpEmail||'').trim().toLowerCase());
+    if(!u||fpAnswer.trim().toLowerCase()!==u.securityAnswer) { setFpErr('Incorrect answer. Please try again.'); return; }
+    goTab('forgot-reset');
+  };
+
+  // ── FORGOT — STEP 3: set new password ──
+  const doFpReset = () => {
+    setFpErr('');
+    if(!fpNewPass)           { setFpErr('Please enter a new password.'); return; }
+    if(fpNewPass.length < 4) { setFpErr('Password must be at least 4 characters.'); return; }
+    if(fpNewPass !== fpConfirm) { setFpErr('Passwords do not match.'); return; }
+    const r = resetPassword(fpEmail, fpAnswer, fpNewPass);
+    if(!r.ok) { setFpErr(r.msg); return; }
+    toast('Password reset successfully! You can now sign in.','success');
+    setFpEmail(''); setFpAnswer(''); setFpNewPass(''); setFpConfirm(''); setFpQuestion('');
+    goTab('login');
+  };
+
+  // ── RENDER ──
+  const isForgot = tab.startsWith('forgot');
+
+  return (
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+
+      {/* Left branding panel */}
+      <div className="hidden lg:flex flex-col justify-between w-[42%] p-14 relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-16">
+            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-xl">D</div>
+            <span className="text-white text-xl font-black tracking-wider">DHOOT</span>
+          </div>
+          <h1 className="text-5xl font-black text-white leading-tight tracking-tight mb-6">Smart Shift<br/>& Payroll<br/><span className="text-indigo-400">Management.</span></h1>
+          <p className="text-slate-400 text-lg leading-relaxed max-w-sm">Track shifts, automate payroll calculations, and manage your team — all in one place.</p>
+        </div>
+        <div className="relative z-10 space-y-4">
+          {[['⏱','Semi-monthly payroll with auto-calculation'],['⚡','Overtime detection at 80h/period'],['📊','Real-time hours dashboard'],['📁','CSV export for every report']].map(([ic,tx])=>(
+            <div key={tx} className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center text-base shrink-0">{ic}</div>
+              <span className="text-slate-300 text-sm font-medium">{tx}</span>
+            </div>
+          ))}
+        </div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"/>
+          <div className="absolute -bottom-40 -left-20 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"/>
+        </div>
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-14">
+        <div className="w-full max-w-md">
+
+          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
+            <div className="w-11 h-11 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-xl font-black">D</div>
+            <span className="text-white text-xl font-black tracking-wider">DHOOT</span>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+
+            {/* Tabs — hidden during forgot flow */}
+            {!isForgot && (
+              <div className="flex border-b border-white/10">
+                {[['login','Sign In'],['register','Create Account']].map(([k,l])=>(
+                  <button key={k} onClick={()=>goTab(k)}
+                    className={`flex-1 py-4 text-sm font-bold transition-all ${tab===k?'text-white bg-indigo-600/30 border-b-2 border-indigo-400':'text-slate-400 hover:text-white'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="p-8">
+
+              {/* ── SIGN IN ── */}
+              {tab === 'login' && (
+                <div className="space-y-5">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-black text-white">Welcome back</h2>
+                    <p className="text-slate-400 text-sm mt-1">Sign in to your account</p>
+                  </div>
+                  <Field label="Email or Username" type="text" placeholder="your@email.com or admin" value={form.email}
+                    onChange={e=>set('email',e.target.value)} error={errs.email}
+                    onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+                  <Field label="Password" type="password" placeholder="Your password" value={form.password}
+                    onChange={e=>set('password',e.target.value)} error={errs.password}
+                    onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+                  {/* Forgot password link */}
+                  <div className="text-right -mt-2">
+                    <button onClick={()=>{ setFpEmail(form.email); goTab('forgot-email'); }}
+                      className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+                      Forgot password?
+                    </button>
+                  </div>
+                  <Btn full onClick={doLogin} size="lg" disabled={loading}>{loading?'Signing in…':'Sign In →'}</Btn>
+                  <p className="text-center text-sm text-slate-400">Don't have an account? <span className="text-indigo-400 cursor-pointer font-semibold hover:text-indigo-300" onClick={()=>goTab('register')}>Create one</span></p>
+                </div>
+              )}
+
+              {/* ── REGISTER ── */}
+              {tab === 'register' && (
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-black text-white">Create account</h2>
+                    <p className="text-slate-400 text-sm mt-1">Admin approves before you can sign in</p>
+                  </div>
+                  <Field label="Full Name" placeholder="Sarah Johnson" value={form.name} onChange={e=>set('name',e.target.value)} error={errs.name}/>
+                  <Field label="Email" type="email" placeholder="your@email.com" value={form.email} onChange={e=>set('email',e.target.value)} error={errs.email}/>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Password" type="password" placeholder="Min 4 chars" value={form.password} onChange={e=>set('password',e.target.value)} error={errs.password}/>
+                    <Field label="Confirm"  type="password" placeholder="Repeat"     value={form.confirm}  onChange={e=>set('confirm',e.target.value)}  error={errs.confirm}/>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Hourly Rate ($)" type="number" min="0" step="0.5" placeholder="15.00" value={form.hourlyRate} onChange={e=>set('hourlyRate',e.target.value)}/>
+                    <Field label="Job Title" placeholder="Barista, Server…" value={form.jobTitle} onChange={e=>set('jobTitle',e.target.value)}/>
+                  </div>
+
+                  {/* Security Question */}
+                  <div className="pt-1 border-t border-white/10">
+                    <p className="text-xs text-slate-400 mb-3">🔐 Set a security question so you can recover your password if you forget it.</p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Security Question</label>
+                        <select value={form.securityQuestion} onChange={e=>set('securityQuestion',e.target.value)}
+                          className="w-full bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-indigo-400 transition-all">
+                          {SECURITY_QUESTIONS.map(q=><option key={q} value={q} className="bg-slate-800">{q}</option>)}
+                        </select>
+                      </div>
+                      <Field label="Your Answer" placeholder="Answer (case-insensitive)" value={form.securityAnswer}
+                        onChange={e=>set('securityAnswer',e.target.value)} error={errs.securityAnswer}/>
+                    </div>
+                  </div>
+
+                  <Btn full onClick={doRegister} size="lg">Create Account →</Btn>
+                  <p className="text-center text-sm text-slate-400">Already have an account? <span className="text-indigo-400 cursor-pointer font-semibold hover:text-indigo-300" onClick={()=>goTab('login')}>Sign in</span></p>
+                </div>
+              )}
+
+              {/* ── FORGOT STEP 1: Enter email ── */}
+              {tab === 'forgot-email' && (
+                <div className="space-y-5">
+                  <div className="text-center mb-4">
+                    <div className="text-4xl mb-3">🔑</div>
+                    <h2 className="text-xl font-black text-white">Forgot Password</h2>
+                    <p className="text-slate-400 text-sm mt-1">Enter your email to begin password recovery</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <input
+                      type="text" placeholder="your@email.com" value={fpEmail}
+                      onChange={e=>{ setFpEmail(e.target.value); setFpErr(''); }}
+                      onKeyDown={e=>e.key==='Enter'&&doFpEmail()}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-indigo-400 transition-all"/>
+                  </div>
+                  {fpErr && <p className="text-xs text-red-400 font-semibold bg-red-500/10 rounded-xl px-3 py-2.5">{fpErr}</p>}
+                  <Btn full onClick={doFpEmail} size="lg">Continue →</Btn>
+                  <p className="text-center text-sm text-slate-400">
+                    <span className="text-indigo-400 cursor-pointer font-semibold hover:text-indigo-300" onClick={()=>goTab('login')}>← Back to Sign In</span>
+                  </p>
+                </div>
+              )}
+
+              {/* ── FORGOT STEP 2: Answer security question ── */}
+              {tab === 'forgot-question' && (
+                <div className="space-y-5">
+                  <div className="text-center mb-4">
+                    <div className="text-4xl mb-3">🔐</div>
+                    <h2 className="text-xl font-black text-white">Security Question</h2>
+                    <p className="text-slate-400 text-sm mt-1">Answer your security question to continue</p>
+                  </div>
+                  <div className="bg-indigo-500/15 border border-indigo-500/30 rounded-xl px-4 py-3">
+                    <p className="text-sm font-semibold text-indigo-300">{fpQuestion}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Your Answer</label>
+                    <input
+                      type="text" placeholder="Type your answer…" value={fpAnswer}
+                      onChange={e=>{ setFpAnswer(e.target.value); setFpErr(''); }}
+                      onKeyDown={e=>e.key==='Enter'&&doFpAnswer()}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-indigo-400 transition-all"/>
+                  </div>
+                  {fpErr && <p className="text-xs text-red-400 font-semibold bg-red-500/10 rounded-xl px-3 py-2.5">{fpErr}</p>}
+                  <Btn full onClick={doFpAnswer} size="lg">Verify Answer →</Btn>
+                  <p className="text-center text-sm text-slate-400">
+                    <span className="text-indigo-400 cursor-pointer font-semibold hover:text-indigo-300" onClick={()=>goTab('forgot-email')}>← Try a different email</span>
+                  </p>
+                </div>
+              )}
+
+              {/* ── FORGOT STEP 3: Set new password ── */}
+              {tab === 'forgot-reset' && (
+                <div className="space-y-5">
+                  <div className="text-center mb-4">
+                    <div className="text-4xl mb-3">✅</div>
+                    <h2 className="text-xl font-black text-white">Set New Password</h2>
+                    <p className="text-slate-400 text-sm mt-1">Identity verified for <span className="text-indigo-300 font-semibold">{fpEmail}</span></p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">New Password</label>
+                    <input
+                      type="password" placeholder="Min 4 characters" value={fpNewPass}
+                      onChange={e=>{ setFpNewPass(e.target.value); setFpErr(''); }}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-indigo-400 transition-all"/>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Confirm New Password</label>
+                    <input
+                      type="password" placeholder="Repeat" value={fpConfirm}
+                      onChange={e=>{ setFpConfirm(e.target.value); setFpErr(''); }}
+                      onKeyDown={e=>e.key==='Enter'&&doFpReset()}
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none focus:border-indigo-400 transition-all"/>
+                  </div>
+                  {fpErr && <p className="text-xs text-red-400 font-semibold bg-red-500/10 rounded-xl px-3 py-2.5">{fpErr}</p>}
+                  <Btn full onClick={doFpReset} size="lg">Reset Password →</Btn>
+                  <p className="text-center text-sm text-slate-400">
+                    <span className="text-indigo-400 cursor-pointer font-semibold hover:text-indigo-300" onClick={()=>goTab('login')}>← Cancel</span>
+                  </p>
+                </div>
+              )}
+
+            </div>
+          </div>
+          <p className="text-center text-slate-500 text-xs mt-6">Your credentials and shift data are stored locally.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────── SIDEBAR ────────────
+const NAV = [
+  { id:'dashboard', label:'Dashboard', icon:'▣' },
+  { id:'shifts',    label:'My Shifts', icon:'⏱' },
+  { id:'payroll',   label:'Payroll',   icon:'💳' },
+  { id:'employees', label:'Team',      icon:'👥', adminOnly:true },
+];
+
+function Sidebar({ page, setPage }) {
+  const { user, logout } = useAuth();
+  const { employees }    = useData();
+  const pending = employees.filter(e=>e.status==='pending').length;
+
+  return (
+    <aside className="w-64 shrink-0 bg-slate-900 flex flex-col min-h-screen border-r border-slate-800">
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-900/50">D</div>
+          <div>
+            <div className="text-white font-black text-sm tracking-widest">DHOOT</div>
+            <div className="text-slate-500 text-[10px] tracking-widest uppercase font-semibold">Shift & Payroll</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-3 space-y-1">
+        {NAV.filter(n=>!n.adminOnly||user?.role==='admin').map(n=>(
+          <button key={n.id} onClick={()=>setPage(n.id)}
+            className={`nav-link w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold ${page===n.id?'active':'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+            <span className="text-base leading-none w-5 text-center">{n.icon}</span>
+            <span>{n.label}</span>
+            {n.id==='employees'&&pending>0&&(
+              <span className="ml-auto bg-amber-500 text-white text-[10px] font-black rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">{pending}</span>
+            )}
+          </button>
+        ))}
+      </nav>
+
+      {/* User */}
+      <div className="p-3 border-t border-slate-800">
+        <div className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-slate-800 transition-all group cursor-default">
+          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0">
+            {(user?.name||'?')[0].toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-white text-sm font-semibold truncate">{user?.name}</div>
+            <div className="text-slate-500 text-xs capitalize font-medium">{user?.role}</div>
+          </div>
+          <button onClick={logout} title="Sign out" className="text-slate-600 hover:text-slate-200 text-lg transition-all opacity-0 group-hover:opacity-100">⏻</button>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ──────────── TOP BAR ────────────
+function TopBar({ page, onAddShift }) {
+  const { user } = useAuth();
+  const { exportShifts, shifts } = useData();
+  const titles = { dashboard:'Dashboard', shifts:'Shift Management', payroll:'Payroll', employees:'Team Management' };
+  const cpp = curPP();
+  const myShifts = user.role==='admin' ? shifts : shifts.filter(s=>s.empId===user.empId);
+
+  return (
+    <div className="bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between shrink-0">
+      <div>
+        <h1 className="text-lg font-black text-slate-900">{titles[page]||'Dashboard'}</h1>
+        <p className="text-xs text-slate-400 font-medium mt-0.5">Current period: {fmtPP(cpp)}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        {page==='shifts'&&(
+          <Btn variant="export" size="sm" onClick={()=>exportShifts(myShifts)}>
+            <span>↓</span> Export Shifts CSV
+          </Btn>
+        )}
+        <Btn onClick={onAddShift} size="sm">
+          <span className="text-base leading-none">+</span> Add Shift
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+// ──────────── SHIFT FORM MODAL ────────────
+function ShiftModal({ open, onClose, editShift=null, preEmpId=null }) {
+  const { user }                      = useAuth();
+  const { employees, addShift, editShift:doEdit } = useData();
+  const isAdmin  = user.role === 'admin';
+  const approved = employees.filter(e=>e.status==='approved');
+
+  const blank = { empId:preEmpId||(isAdmin?'':user.empId), date:new Date().toISOString().split('T')[0], startTime:'', endTime:'', notes:'' };
+  const [form, setForm] = useState(blank);
+  const [errs, setErrs] = useState({});
+
+  useEffect(()=>{
+    setErrs({});
+    if (editShift) setForm({ empId:editShift.empId, date:editShift.date, startTime:editShift.startTime, endTime:editShift.endTime, notes:editShift.notes||'' });
+    else setForm({ ...blank, empId:preEmpId||(isAdmin?(approved[0]?.id||''):user.empId) });
+  }, [open, editShift?.id]);
+
+  const set = (k,v) => { setForm(f=>({...f,[k]:v})); setErrs(e=>({...e,[k]:''})); };
+
+  const submit = () => {
+    const e={};
+    if(isAdmin&&!form.empId) e.empId='Select an employee';
+    if(!form.date)      e.date='Date is required';
+    if(!form.startTime) e.startTime='Required';
+    if(!form.endTime)   e.endTime='Required';
+    setErrs(e); if(Object.keys(e).length) return;
+    editShift ? doEdit(editShift.id, form) : addShift(form);
+    onClose();
+  };
+
+  const preview = form.startTime && form.endTime ? calcHours(form.startTime, form.endTime) : null;
+
+  return (
+    <Modal open={open} onClose={onClose} title={editShift?'Edit Shift':'New Shift'} subtitle="Fill in the details below"
+      footer={<><Btn variant="secondary" onClick={onClose}>Cancel</Btn><Btn onClick={submit}>{editShift?'Save Changes':'Add Shift'}</Btn></>}>
+      <div className="space-y-5">
+        {isAdmin && (
+          <Select label="Employee" value={form.empId} onChange={e=>set('empId',e.target.value)}>
+            <option value="">Select employee…</option>
+            {approved.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+          </Select>
+        )}
+        <Field label="Date" type="date" value={form.date} onChange={e=>set('date',e.target.value)} error={errs.date}/>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Start Time" type="time" value={form.startTime} onChange={e=>set('startTime',e.target.value)} error={errs.startTime}/>
+          <Field label="End Time"   type="time" value={form.endTime}   onChange={e=>set('endTime',e.target.value)}   error={errs.endTime}/>
+        </div>
+        {preview !== null && (
+          <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-3.5">
+            <span className="text-2xl">⏱</span>
+            <div>
+              <div className="text-sm font-bold text-indigo-700">{hrs(preview)} duration</div>
+              <div className="text-xs text-indigo-400">{form.startTime} — {form.endTime}</div>
+            </div>
+          </div>
+        )}
+        <Field label="Notes (optional)" textarea rows={3} value={form.notes} onChange={e=>set('notes',e.target.value)} placeholder="e.g. closing shift, training, cover…"/>
+      </div>
+    </Modal>
+  );
+}
+
+// ──────────── DASHBOARD ────────────
+function DashboardPage({ setPage, onAddShift }) {
+  const { user }  = useAuth();
+  const { employees, shifts, payroll } = useData();
+  const isAdmin   = user.role === 'admin';
+  const cpp       = curPP();
+  const payday    = nextPayday();
+  const approved  = employees.filter(e=>e.status==='approved');
+  const pending   = employees.filter(e=>e.status==='pending');
+  const myShifts  = isAdmin ? shifts : shifts.filter(s=>s.empId===user.empId);
+  const curShifts = myShifts.filter(s=>s.payPeriod===cpp);
+  const allCurSh  = shifts.filter(s=>s.payPeriod===cpp);
+
+  const totHrs  = curShifts.reduce((a,s)=>a+(s.hours||0),0);
+  const totPay  = isAdmin
+    ? payroll.filter(p=>p.payPeriod===cpp).reduce((a,p)=>a+(p.totalPay||0),0)
+    : (payroll.find(p=>p.empId===user.empId&&p.payPeriod===cpp)?.totalPay||0);
+
+  const recent = [...myShifts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+
+  // Chart data per employee
+  const chartData = isAdmin
+    ? approved.map((e,i)=>({ name:e.name.split(' ')[0], color:empColor(i), hrs:allCurSh.filter(s=>s.empId===e.id).reduce((a,s)=>a+(s.hours||0),0) }))
+    : null;
+  const maxHrs = chartData ? Math.max(...chartData.map(d=>d.hrs),1) : 1;
+
+  return (
+    <div className="p-8 space-y-6 fade-up">
+      {pending.length>0&&isAdmin&&(
+        <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4">
+          <span className="text-2xl">⚠️</span>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-amber-800">{pending.length} pending account{pending.length!==1?'s':''} awaiting approval</div>
+            <div className="text-xs text-amber-600 mt-0.5">Review them in the Team section.</div>
+          </div>
+          <Btn variant="amber" size="sm" onClick={()=>setPage('employees')}>Review →</Btn>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+        <StatCard icon="⏱" label={isAdmin?'Team Hours (Period)':'My Hours (Period)'} value={hrs(totHrs)} sub={isAdmin?`${approved.length} employees`:`${hrs(myShifts.reduce((a,s)=>a+(s.hours||0),0))} all time`} accent="indigo"/>
+        <StatCard icon="💵" label={isAdmin?'Payroll (Period)':'My Pay (Period)'} value={money(totPay)} sub={isAdmin?'All employees combined':'Based on your hourly rate'} accent="emerald"/>
+        {isAdmin
+          ? <StatCard icon="👥" label="Active Employees" value={approved.length} sub={`${pending.length} pending approval`} accent="purple"/>
+          : <StatCard icon="📋" label="My Shifts" value={myShifts.length} sub={`${curShifts.length} this period`} accent="blue"/>}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-11 h-11 bg-amber-500 rounded-xl flex items-center justify-center text-white text-xl shadow-lg" style={{boxShadow:'0 4px 12px rgba(245,158,11,.4)'}}>📅</div>
+          </div>
+          <div className="text-2xl font-black text-slate-900">{payday.days} days</div>
+          <div className="text-sm font-medium text-slate-500 mt-1">Next Payday</div>
+          <div className="text-xs text-slate-400 mt-0.5">{payday.label}</div>
+          <div className="mt-4 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+            <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{width:`${Math.min(100,Math.max(3,100-(payday.days/15)*100))}%`}}/>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+        {/* Chart */}
+        {isAdmin && (
+          <div className="xl:col-span-3 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <div className="font-bold text-slate-800">Hours by Employee</div>
+                <div className="text-xs text-slate-400 mt-0.5">{fmtPP(cpp)}</div>
+              </div>
+              <Btn variant="ghost" size="sm" onClick={()=>setPage('payroll')}>Payroll →</Btn>
+            </div>
+            {chartData&&chartData.filter(d=>d.hrs>0).length>0 ? (
+              <div className="space-y-3">
+                {chartData.filter(d=>d.hrs>0).sort((a,b)=>b.hrs-a.hrs).map(d=>(
+                  <div key={d.name} className="flex items-center gap-3">
+                    <div className="text-sm font-semibold text-slate-600 w-20 truncate">{d.name}</div>
+                    <div className="flex-1 bg-slate-100 rounded-full h-7 overflow-hidden">
+                      <div className="h-full rounded-full flex items-center px-3 transition-all duration-700" style={{width:`${Math.max(6,(d.hrs/maxHrs)*100)}%`, background:d.color}}>
+                        <span className="text-white text-xs font-bold whitespace-nowrap">{hrs(d.hrs)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-slate-300 gap-2">
+                <span className="text-5xl">📊</span>
+                <span className="text-sm">No shift data for this period</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Recent shifts */}
+        <div className={`${isAdmin?'xl:col-span-2':'xl:col-span-5'} bg-white rounded-2xl border border-slate-100 shadow-sm p-6`}>
+          <div className="flex items-center justify-between mb-5">
+            <div className="font-bold text-slate-800">Recent Shifts</div>
+            <Btn variant="ghost" size="sm" onClick={()=>setPage('shifts')}>View all →</Btn>
+          </div>
+          {recent.length===0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-slate-300 gap-2">
+              <span className="text-5xl">⏱</span>
+              <span className="text-sm font-medium">No shifts yet</span>
+              <Btn size="sm" onClick={onAddShift}>Add first shift</Btn>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recent.map((s,i)=>{
+                const emp  = employees.find(e=>e.id===s.empId);
+                const dt   = new Date(s.date+'T00:00:00');
+                return (
+                  <div key={s.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className="text-center w-10 shrink-0">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">{MONTHS_SHORT[dt.getMonth()]}</div>
+                      <div className="text-xl font-black text-slate-800 leading-tight">{dt.getDate()}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {isAdmin&&emp&&<div className="text-xs font-bold text-indigo-600 truncate">{emp.name}</div>}
+                      <div className="text-sm text-slate-700 font-mono font-medium">{s.startTime} → {s.endTime}</div>
+                      {s.notes&&<div className="text-xs text-slate-400 truncate italic">{s.notes}</div>}
+                    </div>
+                    <Chip color="indigo">{hrs(s.hours)}</Chip>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────── SHIFTS PAGE ────────────
+function ShiftsPage() {
+  const { user }   = useAuth();
+  const { employees, shifts, delShift, exportShifts } = useData();
+  const isAdmin    = user.role === 'admin';
+  const [addOpen, setAddOpen]   = useState(false);
+  const [editing,  setEditing]  = useState(null);
+  const [ppF,      setPPF]      = useState('all');
+  const [empF,     setEmpF]     = useState('all');
+
+  const myShifts = isAdmin ? shifts : shifts.filter(s=>s.empId===user.empId);
+  const allPPs   = useMemo(()=>[...new Set(myShifts.map(s=>s.payPeriod).filter(Boolean))].sort().reverse(),[myShifts]);
+  const approved = employees.filter(e=>e.status==='approved');
+
+  const filtered = myShifts
+    .filter(s=>(ppF==='all'||s.payPeriod===ppF)&&(empF==='all'||s.empId===empF))
+    .sort((a,b)=>b.date.localeCompare(a.date));
+
+  const totFiltered = filtered.reduce((a,s)=>a+(s.hours||0),0);
+
+  return (
+    <div className="p-8 space-y-6 fade-up">
+      {/* Filters + actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 font-medium shadow-sm"
+          value={ppF} onChange={e=>setPPF(e.target.value)}>
+          <option value="all">All Pay Periods</option>
+          {allPPs.map(pp=><option key={pp} value={pp}>{pp===curPP()?'▶ ':''}{fmtPP(pp)}</option>)}
+        </select>
+        {isAdmin&&(
+          <select className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-400 font-medium shadow-sm"
+            value={empF} onChange={e=>setEmpF(e.target.value)}>
+            <option value="all">All Employees</option>
+            {approved.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
+        )}
+        <div className="ml-auto flex items-center gap-3">
+          {filtered.length>0&&(
+            <div className="text-sm font-bold text-slate-500">{filtered.length} shifts · {hrs(totFiltered)} total</div>
+          )}
+          <Btn variant="export" size="sm" onClick={()=>exportShifts(filtered)}>↓ Export CSV</Btn>
+          <Btn size="sm" onClick={()=>{setEditing(null);setAddOpen(true);}}>+ Add Shift</Btn>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        {filtered.length===0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-300 gap-3">
+            <span className="text-6xl">⏱</span>
+            <p className="text-base font-semibold">No shifts found</p>
+            <p className="text-sm text-slate-400">Try adjusting the filters or add a new shift.</p>
+            <Btn onClick={()=>setAddOpen(true)}>Add Shift</Btn>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                  {isAdmin&&<th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Employee</th>}
+                  <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Time</th>
+                  <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Hours</th>
+                  <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Pay Period</th>
+                  <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Notes</th>
+                  <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4"/>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map(s=>{
+                  const emp = employees.find(e=>e.id===s.empId);
+                  const idx = approved.indexOf(emp);
+                  const dt  = new Date(s.date+'T00:00:00');
+                  return (
+                    <tr key={s.id} className="hover:bg-slate-50/70 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-bold text-slate-800">{dt.getDate()} {MONTHS_SHORT[dt.getMonth()]} {dt.getFullYear()}</div>
+                        <div className="text-xs text-slate-400">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()]}</div>
+                      </td>
+                      {isAdmin&&<td className="px-6 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={emp?.name} size="sm" color={empColor(idx)}/>
+                          <div>
+                            <div className="text-sm font-semibold text-slate-800">{emp?.name||'—'}</div>
+                            <div className="text-xs text-slate-400">{emp?.jobTitle||''}</div>
+                          </div>
+                        </div>
+                      </td>}
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-mono font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">{s.startTime} → {s.endTime}</span>
+                      </td>
+                      <td className="px-6 py-4"><Chip color="indigo">{hrs(s.hours)}</Chip></td>
+                      <td className="px-6 py-4"><span className="text-xs text-slate-500 font-medium">{fmtPP(s.payPeriod)}</span></td>
+                      <td className="px-6 py-4"><span className="text-sm text-slate-400 italic">{s.notes||'—'}</span></td>
+                      <td className="px-6 py-4"><Chip color={s.locked?'slate':'green'}>{s.locked?'🔒 Locked':'Active'}</Chip></td>
+                      <td className="px-6 py-4">
+                        {!s.locked ? (
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Btn size="xs" variant="secondary" onClick={()=>{setEditing(s);setAddOpen(true);}}>Edit</Btn>
+                            <Btn size="xs" variant="danger" onClick={()=>{if(confirm('Delete this shift?'))delShift(s.id);}}>Delete</Btn>
+                          </div>
+                        ) : <span className="text-xs text-slate-300">Paid & locked</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              {filtered.length>1&&(
+                <tfoot>
+                  <tr className="bg-slate-50 border-t border-slate-200">
+                    <td colSpan={isAdmin?2:1} className="px-6 py-3 text-xs font-black text-slate-400 uppercase">Total</td>
+                    <td className="px-6 py-3"/>
+                    <td className="px-6 py-3"><Chip color="indigo">{hrs(totFiltered)}</Chip></td>
+                    <td colSpan={5}/>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        )}
+      </div>
+
+      <ShiftModal open={addOpen} onClose={()=>{setAddOpen(false);setEditing(null);}} editShift={editing}/>
+    </div>
+  );
+}
+
+// ──────────── PAYROLL PAGE ────────────
+function PayrollPage() {
+  const { user } = useAuth();
+  const { employees, shifts, payroll, genPayroll, markPaid, exportPayroll } = useData();
+  const isAdmin  = user.role === 'admin';
+  const cpp      = curPP();
+  const [selPP, setSelPP] = useState(cpp);
+
+  const allPPs = useMemo(()=>{
+    const s = new Set([cpp,...shifts.map(s=>s.payPeriod)]);
+    return [...s].filter(Boolean).sort().reverse();
+  }, [shifts]);
+
+  const allRecs = payroll.filter(p=>p.payPeriod===selPP);
+  const myRecs  = isAdmin ? allRecs : allRecs.filter(p=>p.empId===user.empId);
+
+  const totH   = myRecs.reduce((a,p)=>a+(p.totalHours||0),0);
+  const totPay = myRecs.reduce((a,p)=>a+(p.totalPay||0),0);
+  const totOT  = myRecs.reduce((a,p)=>a+(p.overtimeHours||0),0);
+  const paidCt = myRecs.filter(p=>p.status==='paid').length;
+
+  const doExport = () => exportPayroll(myRecs);
+
+  return (
+    <div className="p-8 space-y-6 fade-up">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 font-medium outline-none focus:border-indigo-400 shadow-sm"
+          value={selPP} onChange={e=>setSelPP(e.target.value)}>
+          {allPPs.map(pp=><option key={pp} value={pp}>{pp===cpp?'▶ Current: ':''}{fmtPP(pp)}</option>)}
+        </select>
+        <div className="ml-auto flex items-center gap-3">
+          {isAdmin&&<Btn variant="secondary" size="sm" onClick={()=>genPayroll(selPP)}>⚙ Generate Payroll</Btn>}
+          <Btn variant="export" size="sm" onClick={doExport}>↓ Export Payroll CSV</Btn>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+        <StatCard icon="⏱" label="Total Hours" value={hrs(totH)} accent="indigo" sub={`${hrs(totOT)} overtime`}/>
+        <StatCard icon="💵" label="Total Pay"   value={money(totPay)} accent="emerald"/>
+        <StatCard icon="⚡" label="Overtime Hours" value={hrs(totOT)} accent="amber" sub={totOT>0?'1.5× rate applied':'No overtime this period'}/>
+        {isAdmin
+          ? <StatCard icon="✅" label="Paid Status" value={`${paidCt} / ${myRecs.length}`} accent="purple" sub={myRecs.length-paidCt>0?`${myRecs.length-paidCt} pending`:'All paid'}/>
+          : <StatCard icon="📋" label="My Status" value={myRecs[0]?.status==='paid'?'✓ Paid':'Pending'} accent="blue" sub={myRecs[0]?.paidAt?`Paid ${new Date(myRecs[0].paidAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:undefined}/>}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-bold text-slate-800">{fmtPP(selPP)}</div>
+            {selPP===cpp&&<Chip color="indigo">Current Period</Chip>}
+          </div>
+        </div>
+
+        {myRecs.length===0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-300 gap-3">
+            <span className="text-6xl">💳</span>
+            <p className="text-base font-semibold">No payroll records</p>
+            {isAdmin&&<Btn onClick={()=>genPayroll(selPP)}>Generate Payroll</Btn>}
+            {!isAdmin&&<p className="text-sm text-slate-400">The admin hasn't generated payroll for this period yet.</p>}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50">
+                  {[isAdmin&&'Employee','Reg Hours','OT Hours','Total Hours','Rate',isAdmin&&'Reg Pay',isAdmin&&'OT Pay','Total Pay','Status',isAdmin&&'Action'].filter(Boolean).map(h=>(
+                    <th key={h} className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {myRecs.map(p=>{
+                  const emp = employees.find(e=>e.id===p.empId);
+                  const idx = employees.filter(e=>e.status==='approved').indexOf(emp);
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
+                      {isAdmin&&<td className="px-6 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={p.empName} size="sm" color={empColor(idx)}/>
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">{p.empName}</div>
+                            <div className="text-xs text-slate-400">{p.jobTitle}</div>
+                          </div>
+                        </div>
+                      </td>}
+                      <td className="px-6 py-4 text-sm text-slate-700 font-medium">{hrs(p.regularHours)}</td>
+                      <td className="px-6 py-4">
+                        {p.overtimeHours>0
+                          ? <span className="text-sm font-bold text-amber-600">{hrs(p.overtimeHours)}</span>
+                          : <span className="text-slate-300 text-sm">—</span>}
+                      </td>
+                      <td className="px-6 py-4"><Chip color="indigo">{hrs(p.totalHours)}</Chip></td>
+                      <td className="px-6 py-4 text-sm text-slate-600">${p.hourlyRate}/hr</td>
+                      {isAdmin&&<td className="px-6 py-4 text-sm text-slate-700">{money(p.regularPay)}</td>}
+                      {isAdmin&&<td className="px-6 py-4">
+                        {p.overtimePay>0
+                          ? <span className="text-sm font-semibold text-amber-600">{money(p.overtimePay)}</span>
+                          : <span className="text-slate-300 text-sm">—</span>}
+                      </td>}
+                      <td className="px-6 py-4 text-sm font-black text-slate-900">{money(p.totalPay)}</td>
+                      <td className="px-6 py-4">
+                        <Chip color={p.status==='paid'?'green':'yellow'}>{p.status==='paid'?'✓ Paid':'Pending'}</Chip>
+                      </td>
+                      {isAdmin&&<td className="px-6 py-4">
+                        {p.status!=='paid'
+                          ? <Btn size="sm" variant="success" onClick={()=>markPaid(p.id)}>Mark Paid</Btn>
+                          : <span className="text-xs text-slate-300">—</span>}
+                      </td>}
+                    </tr>
+                  );
+                })}
+              </tbody>
+              {myRecs.length>1&&(
+                <tfoot>
+                  <tr className="bg-slate-50 border-t-2 border-slate-200">
+                    {isAdmin&&<td className="px-6 py-4 text-xs font-black text-slate-500 uppercase">Totals</td>}
+                    <td className="px-6 py-4 text-sm font-bold">{hrs(myRecs.reduce((a,p)=>a+(p.regularHours||0),0))}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-amber-600">{hrs(totOT)||'—'}</td>
+                    <td className="px-6 py-4"><Chip color="indigo">{hrs(totH)}</Chip></td>
+                    <td className="px-6 py-4">—</td>
+                    {isAdmin&&<td className="px-6 py-4 text-sm font-bold">{money(myRecs.reduce((a,p)=>a+(p.regularPay||0),0))}</td>}
+                    {isAdmin&&<td className="px-6 py-4 text-sm font-bold text-amber-600">{money(myRecs.reduce((a,p)=>a+(p.overtimePay||0),0))}</td>}
+                    <td className="px-6 py-4 text-sm font-black text-slate-900">{money(totPay)}</td>
+                    <td colSpan={isAdmin?2:1}/>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ──────────── EMPLOYEES PAGE ────────────
+function EmployeesPage() {
+  const { employees, shifts, approveEmp, rejectEmp, removeEmp, updateEmp, exportShifts } = useData();
+  const [tab,   setTab]  = useState('approved');
+  const [edit,  setEdit] = useState(null);
+  const [ef,    setEF]   = useState({});
+
+  const groups = {
+    approved: employees.filter(e=>e.status==='approved'),
+    pending:  employees.filter(e=>e.status==='pending'),
+    rejected: employees.filter(e=>e.status==='rejected'),
+  };
+  const list = groups[tab];
+
+  const openEdit = (e) => { setEdit(e); setEF({ name:e.name, hourlyRate:e.hourlyRate, jobTitle:e.jobTitle||'' }); };
+  const saveEdit = () => {
+    updateEmp(edit.id, { name:ef.name.trim(), hourlyRate:parseFloat(ef.hourlyRate)||0, jobTitle:ef.jobTitle.trim() });
+    setEdit(null);
+  };
+
+  return (
+    <div className="p-8 space-y-6 fade-up">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-slate-400">{groups.approved.length} active · {groups.pending.length} pending · {groups.rejected.length} rejected</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-slate-100 rounded-2xl p-1.5 w-fit">
+        {[['approved','Active'],['pending','Pending'],['rejected','Rejected']].map(([k,l])=>(
+          <button key={k} onClick={()=>setTab(k)}
+            className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${tab===k?'bg-white text-slate-900 shadow-sm':'text-slate-500 hover:text-slate-700'}`}>
+            {l}
+            {k==='pending'&&groups.pending.length>0&&<span className="ml-2 bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{groups.pending.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        {list.length===0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-300 gap-3">
+            <span className="text-6xl">👥</span>
+            <p className="text-base font-semibold">No {tab} employees</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50">
+                  {['Employee','Email','Job Title','Hourly Rate','Total Hours','Joined','Actions'].map(h=>(
+                    <th key={h} className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {list.map((emp,i)=>{
+                  const empShifts = shifts.filter(s=>s.empId===emp.id);
+                  const totH = empShifts.reduce((a,s)=>a+(s.hours||0),0);
+                  const joined = new Date(emp.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+                  return (
+                    <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={emp.name} size="md" color={empColor(i)}/>
+                          <div>
+                            <div className="text-sm font-bold text-slate-900">{emp.name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">{emp.email}</td>
+                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">{emp.jobTitle||'—'}</td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-bold text-slate-800">${emp.hourlyRate}</span>
+                        <span className="text-xs text-slate-400">/hr</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Chip color="indigo">{hrs(totH)}</Chip>
+                          <span className="text-xs text-slate-400">{empShifts.length} shifts</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-400 font-medium">{joined}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {tab==='pending'&&<>
+                            <Btn size="xs" variant="success" onClick={()=>approveEmp(emp.id)}>✓ Approve</Btn>
+                            <Btn size="xs" variant="danger"  onClick={()=>rejectEmp(emp.id)}>Reject</Btn>
+                          </>}
+                          {tab==='approved'&&<>
+                            <Btn size="xs" variant="secondary" onClick={()=>openEdit(emp)}>Edit</Btn>
+                            <Btn size="xs" variant="export" onClick={()=>exportShifts(shifts.filter(s=>s.empId===emp.id))}>↓ CSV</Btn>
+                            <Btn size="xs" variant="danger" onClick={()=>{if(confirm(`Remove ${emp.name} and all their data?`))removeEmp(emp.id);}}>Remove</Btn>
+                          </>}
+                          {tab==='rejected'&&<>
+                            <Btn size="xs" variant="success" onClick={()=>approveEmp(emp.id)}>Approve</Btn>
+                            <Btn size="xs" variant="danger"  onClick={()=>{if(confirm(`Remove ${emp.name}?`))removeEmp(emp.id);}}>Remove</Btn>
+                          </>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Modal open={!!edit} onClose={()=>setEdit(null)} title="Edit Employee" subtitle="Update employee details and hourly rate"
+        footer={<><Btn variant="secondary" onClick={()=>setEdit(null)}>Cancel</Btn><Btn onClick={saveEdit}>Save Changes</Btn></>}>
+        <div className="space-y-5">
+          <Field label="Full Name" value={ef.name||''} onChange={e=>setEF(f=>({...f,name:e.target.value}))}/>
+          <Field label="Job Title" value={ef.jobTitle||''} onChange={e=>setEF(f=>({...f,jobTitle:e.target.value}))} placeholder="e.g. Barista, Manager…"/>
+          <Field label="Hourly Rate ($)" type="number" min="0" step="0.5" value={ef.hourlyRate||''} onChange={e=>setEF(f=>({...f,hourlyRate:e.target.value}))} hint="Overtime applies after 80 hours per pay period (1.5× rate)"/>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ──────────── APP SHELL ────────────
+function AppShell() {
+  const { user } = useAuth();
+  const [page, setPage]       = useState('dashboard');
+  const [shiftOpen, setShift] = useState(false);
+
+  if (!user) return <LoginPage/>;
+
+  const isAdmin = user.role === 'admin';
+  const pages   = {
+    dashboard: <DashboardPage setPage={setPage} onAddShift={()=>setShift(true)}/>,
+    shifts:    <ShiftsPage/>,
+    payroll:   <PayrollPage/>,
+    employees: isAdmin ? <EmployeesPage/> : <DashboardPage setPage={setPage} onAddShift={()=>setShift(true)}/>,
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar page={page} setPage={setPage}/>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopBar page={page} onAddShift={()=>setShift(true)}/>
+        <div className="flex-1 overflow-y-auto bg-slate-50">
+          {pages[page] || pages.dashboard}
+        </div>
+      </div>
+      <ShiftModal open={shiftOpen} onClose={()=>setShift(false)}/>
+    </div>
+  );
+}
+
+function DataLayer() {
+  const { user } = useAuth();
+  if (!user) return <LoginPage/>;
+  return <DataProvider><AppShell/></DataProvider>;
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AuthProvider>
+        <DataLayer/>
+      </AuthProvider>
+    </ToastProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
