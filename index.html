@@ -10,59 +10,13 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --primary: #ff6b2b;
-  --secondary: #00d4ff;
-  --bg: #ffffff;
-  --surface: #f8fafc;
-  --text: #0f172a;
-  --border: #e2e8f0;
-}
-body { 
-  font-family: 'Outfit', sans-serif; 
-  background-color: var(--bg); 
-  color: var(--text); 
-}
-.glass-card {
-  background: white;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-.input-field {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-  width: 100%;
-  outline: none;
-  transition: border 0.2s;
-}
+:root { --primary: #ff6b2b; --bg: #ffffff; --surface: #f8fafc; --text: #0f172a; --border: #e2e8f0; }
+body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); }
+.glass-card { background: white; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+.input-field { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; width: 100%; outline: none; }
 .input-field:focus { border-color: var(--primary); }
-.shimmer-btn {
-  background: linear-gradient(90deg, var(--primary), #ff8c42);
-  color: white;
-  font-weight: bold;
-  padding: 12px 24px;
-  border-radius: 12px;
-  transition: transform 0.1s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.shimmer-btn:active { transform: scale(0.96); }
-.btn-secondary {
-  border: 1px solid var(--border);
-  background: white;
-  padding: 10px 20px;
-  border-radius: 12px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-.btn-secondary:hover { background: var(--surface); border-color: var(--primary); }
+.shimmer-btn { background: linear-gradient(90deg, var(--primary), #ff8c42); color: white; font-weight: bold; padding: 12px 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-secondary { border: 1px solid var(--border); background: white; padding: 10px 20px; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
 </style>
 </head>
 <body>
@@ -70,7 +24,6 @@ body {
 <script type="text/babel">
 const { useState, useEffect } = React;
 
-// --- UTILS ---
 const money = (n) => '$' + (+(n || 0)).toFixed(2);
 const calcHours = (s, e) => {
   if (!s || !e) return 0;
@@ -81,17 +34,16 @@ const calcHours = (s, e) => {
   return Math.round(mins * 10 / 60) / 10;
 };
 
-// --- DATA LOGIC ---
 const store = {
   get: (k) => JSON.parse(localStorage.getItem(k) || '[]'),
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-// --- EXCEL CSV EXPORT LOGIC ---
+// --- CSV EXPORT LOGIC ---
 function downloadShiftsCSV(data, role) {
   if (!data || !data.length) return alert("No shifts to export.");
 
-  // Define headers based on role
+  // Headers defined exactly like your screenshot
   const headers = role === 'admin' 
     ? ["Date", "Staff Name", "Start Time", "End Time", "Hours", "Earned ($)"]
     : ["Date", "Start Time", "End Time", "Hours", "Earned ($)"];
@@ -100,18 +52,17 @@ function downloadShiftsCSV(data, role) {
   let totalHours = 0;
   let totalPay = 0;
 
-  // Process data rows
   data.forEach(s => {
-    totalHours += s.hours;
-    totalPay += s.earned;
+    totalHours += (s.hours || 0);
+    totalPay += (s.earned || 0);
     
+    // Explicitly mapping s.startTime and s.endTime to the CSV
     const row = role === 'admin'
-      ? [s.date, s.userName, s.startTime, s.endTime, s.hours, s.earned.toFixed(2)]
-      : [s.date, s.startTime, s.endTime, s.hours, s.earned.toFixed(2)];
+      ? [s.date, s.userName, s.startTime || "N/A", s.endTime || "N/A", s.hours, s.earned.toFixed(2)]
+      : [s.date, s.startTime || "N/A", s.endTime || "N/A", s.hours, s.earned.toFixed(2)];
     rows.push(row.map(v => `"${v}"`).join(","));
   });
 
-  // Add the "Total" row for Excel math
   const totalRow = role === 'admin'
     ? ["TOTAL", "", "", "", totalHours.toFixed(2), totalPay.toFixed(2)]
     : ["TOTAL", "", "", totalHours.toFixed(2), totalPay.toFixed(2)];
@@ -128,14 +79,7 @@ function downloadShiftsCSV(data, role) {
   document.body.removeChild(link);
 }
 
-const ADMIN_USER = { 
-  id: 'admin-root', 
-  name: 'Account Owner', 
-  email: 'admin', 
-  password: 'admin123', 
-  rate: 0, 
-  role: 'admin' 
-};
+const ADMIN_USER = { id: 'admin-root', name: 'Account Owner', email: 'admin', password: 'admin123', rate: 0, role: 'admin' };
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('session') || 'null'));
@@ -147,7 +91,6 @@ function App() {
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
   const [regRate, setRegRate] = useState(15);
-
   const [logEmail, setLogEmail] = useState('');
   const [logPass, setLogPass] = useState('');
 
@@ -162,7 +105,6 @@ function App() {
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     store.set('users', updatedUsers);
-    alert("Account created!");
     setView('login');
   };
 
@@ -182,18 +124,32 @@ function App() {
   };
 
   const addShift = () => {
-    const hrs = calcHours(startTime, endTime);
+    const hrsCalculated = calcHours(startTime, endTime);
     const newShift = { 
-      id: Date.now(), userId: user.id, userName: user.name, 
-      date: shiftDate, startTime, endTime, hours: hrs, earned: hrs * user.rate 
+      id: Date.now(), 
+      userId: user.id, 
+      userName: user.name, 
+      date: shiftDate, 
+      startTime: startTime, // Crucial: Saving exactly as named
+      endTime: endTime,     // Crucial: Saving exactly as named
+      hours: hrsCalculated, 
+      earned: hrsCalculated * user.rate 
     };
     const updated = [...shifts, newShift];
     setShifts(updated);
     store.set('shifts', updated);
+    alert("Shift Logged!");
+  };
+
+  const deleteShift = (id) => {
+    if(window.confirm("Delete?")) {
+      const updated = shifts.filter(s => s.id !== id);
+      setShifts(updated);
+      store.set('shifts', updated);
+    }
   };
 
   const visibleShifts = user?.role === 'admin' ? shifts : shifts.filter(s => s.userId === user?.id);
-  const totalEarned = visibleShifts.reduce((a, b) => a + b.earned, 0);
 
   if (!user) {
     return (
@@ -241,35 +197,21 @@ function App() {
         <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500">SIGN OUT</button>
       </aside>
 
-      <main className="flex-1 p-6 md:p-12 max-w-5xl">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <main className="flex-1 p-6 md:p-12 max-w-6xl">
+        <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-extrabold">{user.role === 'admin' ? 'Master Records' : 'My Earnings'}</h1>
-          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="btn-secondary">
-             📥 Export to CSV (Excel)
-          </button>
+          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="btn-secondary">📥 Export CSV</button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div className="glass-card p-6 rounded-3xl border-l-4 border-l-orange-500">
-            <p className="text-sm font-bold text-slate-400 uppercase">{user.role === 'admin' ? 'Total Business Payout' : 'Total Earned'}</p>
-            <p className="text-4xl font-extrabold text-slate-900">{money(totalEarned)}</p>
-          </div>
-          <div className="glass-card p-6 rounded-3xl border-l-4 border-l-cyan-500">
-            <p className="text-sm font-bold text-slate-400 uppercase">Shift Count</p>
-            <p className="text-4xl font-extrabold text-slate-900">{visibleShifts.length}</p>
-          </div>
-        </div>
-
         {user.role !== 'admin' && (
           <div className="glass-card p-8 rounded-3xl mb-10">
             <h3 className="text-xl font-bold mb-6">Log New Shift</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
-              <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
-              <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
+              <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400">DATE</label><input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400">START</label><input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400">END</label><input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} /></div>
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center">
-              <div><p className="text-xs font-bold text-slate-400 uppercase">Preview</p><p className="text-2xl font-black text-orange-600">{money(calcHours(startTime, endTime) * user.rate)}</p></div>
               <button onClick={addShift} className="shimmer-btn">Submit Shift</button>
             </div>
           </div>
@@ -281,17 +223,25 @@ function App() {
               <tr>
                 <th className="p-4 text-xs font-bold text-slate-400">DATE</th>
                 {user.role === 'admin' && <th className="p-4 text-xs font-bold text-slate-400">STAFF</th>}
+                <th className="p-4 text-xs font-bold text-slate-400">START</th>
+                <th className="p-4 text-xs font-bold text-slate-400">END</th>
                 <th className="p-4 text-xs font-bold text-slate-400">HOURS</th>
-                <th className="p-4 text-xs font-bold text-slate-400">EARNED</th>
+                <th className="p-4 text-xs font-bold text-slate-400">PAY</th>
+                <th className="p-4"></th>
               </tr>
             </thead>
             <tbody>
               {visibleShifts.slice().reverse().map(s => (
-                <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="p-4 font-semibold">{s.date}</td>
-                  {user.role === 'admin' && <td className="p-4 text-slate-600 font-medium">{s.userName}</td>}
+                  {user.role === 'admin' && <td className="p-4 font-medium">{s.userName}</td>}
+                  <td className="p-4 text-slate-500 font-mono text-sm">{s.startTime}</td>
+                  <td className="p-4 text-slate-500 font-mono text-sm">{s.endTime}</td>
                   <td className="p-4 text-slate-500">{s.hours}h</td>
-                  <td className="p-4 font-bold text-slate-900">{money(s.earned)}</td>
+                  <td className="p-4 font-bold">{money(s.earned)}</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => deleteShift(s.id)} className="text-red-400 text-xs font-bold">Delete</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
