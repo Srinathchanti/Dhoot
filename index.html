@@ -52,7 +52,7 @@ body {
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useContext, createContext } = React;
+const { useState, useEffect } = React;
 
 // --- UTILS ---
 const money = (n) => '$' + (+(n || 0)).toFixed(2);
@@ -71,9 +71,19 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
+// Hardcoded Admin Credentials
+const ADMIN_USER = { 
+  id: 'admin-root', 
+  name: 'Account Owner', 
+  email: 'admin', 
+  password: 'admin123', 
+  rate: 0, 
+  role: 'admin' 
+};
+
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('session') || 'null'));
-  const [view, setView] = useState('login'); // login, register, dashboard
+  const [view, setView] = useState('login'); 
   const [shifts, setShifts] = useState(store.get('shifts'));
   const [users, setUsers] = useState(store.get('users'));
 
@@ -94,7 +104,18 @@ function App() {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    const newUser = { id: Date.now(), name: regName, email: regEmail, password: regPass, rate: Number(regRate) };
+    if (regEmail.toLowerCase() === 'admin') {
+      alert("This username is reserved.");
+      return;
+    }
+    const newUser = { 
+      id: Date.now(), 
+      name: regName, 
+      email: regEmail.toLowerCase(), 
+      password: regPass, 
+      rate: Number(regRate),
+      role: 'staff'
+    };
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     store.set('users', updatedUsers);
@@ -104,7 +125,17 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const found = users.find(u => u.email === logEmail && u.password === logPass);
+    const inputEmail = logEmail.toLowerCase();
+    
+    // Check Admin First
+    if (inputEmail === ADMIN_USER.email && logPass === ADMIN_USER.password) {
+      setUser(ADMIN_USER);
+      localStorage.setItem('session', JSON.stringify(ADMIN_USER));
+      return;
+    }
+
+    // Check Registered Users
+    const found = users.find(u => u.email === inputEmail && u.password === logPass);
     if (found) {
       setUser(found);
       localStorage.setItem('session', JSON.stringify(found));
@@ -115,14 +146,22 @@ function App() {
 
   const addShift = () => {
     const hrs = calcHours(startTime, endTime);
-    const newShift = { id: Date.now(), userId: user.id, date: shiftDate, hours: hrs, earned: hrs * user.rate };
+    const newShift = { 
+      id: Date.now(), 
+      userId: user.id, 
+      userName: user.name,
+      date: shiftDate, 
+      hours: hrs, 
+      earned: hrs * user.rate 
+    };
     const updated = [...shifts, newShift];
     setShifts(updated);
     store.set('shifts', updated);
   };
 
-  const myShifts = shifts.filter(s => s.userId === user?.id);
-  const totalEarned = myShifts.reduce((a, b) => a + b.earned, 0);
+  // Logic: Admin sees everything, Staff sees only their own
+  const visibleShifts = user?.role === 'admin' ? shifts : shifts.filter(s => s.userId === user?.id);
+  const totalEarned = visibleShifts.reduce((a, b) => a + b.earned, 0);
   const currentSessionEarnings = calcHours(startTime, endTime) * (user?.rate || 0);
 
   if (!user) {
@@ -141,7 +180,7 @@ function App() {
 
           {view === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
-              <input type="email" placeholder="Email" className="input-field" required onChange={e => setLogEmail(e.target.value)} />
+              <input type="text" placeholder="Username or Email" className="input-field" required onChange={e => setLogEmail(e.target.value)} />
               <input type="password" placeholder="Password" className="input-field" required onChange={e => setLogPass(e.target.value)} />
               <button className="shimmer-btn w-full">Sign In</button>
             </form>
@@ -169,9 +208,10 @@ function App() {
         <h2 className="text-xl font-extrabold mb-10 text-orange-600">FIRE & ICE</h2>
         <div className="flex-1 space-y-4">
           <div className="p-4 bg-orange-50 rounded-2xl">
-            <p className="text-xs font-bold text-orange-400">WELCOME</p>
+            <p className="text-xs font-bold text-orange-400">LOGGED IN AS</p>
             <p className="font-bold text-slate-800">{user.name}</p>
-            <p className="text-sm text-slate-500">${user.rate}/hr</p>
+            <p className="text-xs font-bold text-slate-500 uppercase mt-1">{user.role}</p>
+            {user.role !== 'admin' && <p className="text-sm text-slate-500">${user.rate}/hr</p>}
           </div>
         </div>
         <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500">SIGN OUT</button>
@@ -179,36 +219,38 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-12 max-w-4xl">
-        <h1 className="text-3xl font-extrabold mb-8">Earnings Dashboard</h1>
+        <h1 className="text-3xl font-extrabold mb-8">{user.role === 'admin' ? 'Master Records' : 'My Earnings'}</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <div className="glass-card p-6 rounded-3xl border-l-4 border-l-orange-500">
-            <p className="text-sm font-bold text-slate-400">TOTAL EARNINGS</p>
+            <p className="text-sm font-bold text-slate-400 uppercase">{user.role === 'admin' ? 'Total Business Payout' : 'Total Earned'}</p>
             <p className="text-4xl font-extrabold text-slate-900">{money(totalEarned)}</p>
           </div>
           <div className="glass-card p-6 rounded-3xl border-l-4 border-l-cyan-500">
-            <p className="text-sm font-bold text-slate-400">TOTAL SHIFTS</p>
-            <p className="text-4xl font-extrabold text-slate-900">{myShifts.length}</p>
+            <p className="text-sm font-bold text-slate-400 uppercase">Total Shift Records</p>
+            <p className="text-4xl font-extrabold text-slate-900">{visibleShifts.length}</p>
           </div>
         </div>
 
-        {/* Shift Entry */}
-        <div className="glass-card p-8 rounded-3xl mb-10">
-          <h3 className="text-xl font-bold mb-6">Log New Shift</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
-            <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
-            <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
-          </div>
-          
-          <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center mb-6">
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase">Estimated Earnings for this shift</p>
-              <p className="text-2xl font-black text-orange-600">{money(currentSessionEarnings)}</p>
+        {/* Shift Entry - Only for Staff */}
+        {user.role !== 'admin' && (
+          <div className="glass-card p-8 rounded-3xl mb-10">
+            <h3 className="text-xl font-bold mb-6">Log New Shift</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
+              <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
+              <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
-            <button onClick={addShift} className="shimmer-btn">Submit Shift</button>
+            
+            <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center mb-6">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase">Earnings Preview</p>
+                <p className="text-2xl font-black text-orange-600">{money(currentSessionEarnings)}</p>
+              </div>
+              <button onClick={addShift} className="shimmer-btn">Submit Shift</button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* History Table */}
         <div className="glass-card rounded-3xl overflow-hidden">
@@ -216,18 +258,25 @@ function App() {
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="p-4 text-xs font-bold text-slate-400">DATE</th>
+                {user.role === 'admin' && <th className="p-4 text-xs font-bold text-slate-400">STAFF NAME</th>}
                 <th className="p-4 text-xs font-bold text-slate-400">HOURS</th>
-                <th className="p-4 text-xs font-bold text-slate-400">EARNED</th>
+                <th className="p-4 text-xs font-bold text-slate-400">TOTAL PAY</th>
               </tr>
             </thead>
             <tbody>
-              {myShifts.slice().reverse().map(s => (
+              {visibleShifts.slice().reverse().map(s => (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                   <td className="p-4 font-semibold">{s.date}</td>
+                  {user.role === 'admin' && <td className="p-4 text-slate-600 font-medium">{s.userName}</td>}
                   <td className="p-4 text-slate-500">{s.hours}h</td>
                   <td className="p-4 font-bold text-slate-900">{money(s.earned)}</td>
                 </tr>
               ))}
+              {visibleShifts.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="p-10 text-center text-slate-400 italic">No shift records found</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
