@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,72 +30,44 @@
 html,body,#root{height:100%;min-height:100vh;}
 body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--text);}
 
-/* Scrollbar */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,107,43,.4);border-radius:99px;}
 
-/* Gradient text */
 .grad-text{background:linear-gradient(135deg,var(--fire),var(--fire2),var(--ice));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .grad-fire{background:linear-gradient(135deg,#ff6b2b,#ffab3c);}
 .grad-ice{background:linear-gradient(135deg,#00d4ff,#06c2c2);}
 .grad-both{background:linear-gradient(135deg,#ff6b2b,#ff8c42,#00d4ff);}
 
-/* Glass card */
 .glass{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);backdrop-filter:blur(20px);}
 .glass-hover:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.15);}
 
-/* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
 @keyframes toastIn{from{opacity:0;transform:translateX(110%);}to{opacity:1;transform:none;}}
-@keyframes pulse-fire{0%,100%{box-shadow:0 0 0 0 rgba(255,107,43,.4);}50%{box-shadow:0 0 0 8px rgba(255,107,43,0);}}
 @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-@keyframes spin-slow{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 @keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
 
 .fade-up{animation:fadeUp .3s cubic-bezier(.16,1,.3,1) both;}
 .toast-in{animation:toastIn .35s cubic-bezier(.16,1,.3,1) both;}
 .float{animation:float 4s ease-in-out infinite;}
 
-/* Glow effects */
 .glow-fire{box-shadow:0 0 20px rgba(255,107,43,.25),0 0 60px rgba(255,107,43,.1);}
 .glow-ice{box-shadow:0 0 20px rgba(0,212,255,.25),0 0 60px rgba(0,212,255,.1);}
 .glow-btn:hover{box-shadow:0 4px 20px rgba(255,107,43,.45);}
-.glow-btn-ice:hover{box-shadow:0 4px 20px rgba(0,212,255,.35);}
-
-/* Active nav */
 .nav-active{background:linear-gradient(135deg,rgba(255,107,43,.15),rgba(0,212,255,.1));border:1px solid rgba(255,107,43,.3);}
-
-/* Input focus glow */
 .inp-focus:focus{border-color:rgba(255,107,43,.6)!important;box-shadow:0 0 0 3px rgba(255,107,43,.15)!important;}
-.inp-focus-ice:focus{border-color:rgba(0,212,255,.6)!important;box-shadow:0 0 0 3px rgba(0,212,255,.15)!important;}
 
-/* BG mesh */
 .bg-mesh{background:radial-gradient(ellipse at 20% 20%,rgba(255,107,43,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(0,212,255,.08) 0%,transparent 60%),var(--bg);}
-
-/* Drag */
-.dragging-widget{opacity:.25;transform:scale(.96);}
-.drop-target{box-shadow:0 0 0 2px #ff6b2b,0 0 20px rgba(255,107,43,.3);}
-
-/* Shimmer button */
 .shimmer-btn{background:linear-gradient(90deg,#ff6b2b,#ffab3c,#00d4ff,#ff6b2b);background-size:300% auto;animation:shimmer 3s linear infinite;}
-.shimmer-btn:hover{animation-duration:1.5s;}
-
-input[type=date]::-webkit-calendar-picker-indicator,
-input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;filter:invert(1);opacity:.4;}
-
-/* Table row hover */
 .tr-hover:hover{background:rgba(255,255,255,0.03);}
 
-/* Stat glow bg */
 .stat-fire-bg{background:linear-gradient(135deg,rgba(255,107,43,.15),rgba(255,171,60,.08));border:1px solid rgba(255,107,43,.2);}
 .stat-ice-bg{background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(6,194,194,.08));border:1px solid rgba(0,212,255,.2);}
 .stat-purple-bg{background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(168,85,247,.08));border:1px solid rgba(139,92,246,.2);}
 .stat-green-bg{background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(5,150,105,.08));border:1px solid rgba(16,185,129,.2);}
 
-/* Pill tabs */
-.pill-tab{transition:all .2s ease;}
-.pill-tab.on{background:linear-gradient(135deg,rgba(255,107,43,.2),rgba(0,212,255,.15));border-color:rgba(255,107,43,.4);color:var(--text);}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;filter:invert(1);opacity:.4;}
 </style>
 </head>
 <body class="bg-mesh">
@@ -102,26 +75,21 @@ input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;filter:invert
 <script type="text/babel">
 const {useState,useEffect,useContext,createContext,useCallback,useMemo,useRef} = React;
 
-// ──────────── CONSTANTS ────────────
+// ──────────── CONSTANTS & UTILS ────────────
 const ADMIN = { id:'admin', name:'Admin', email:'admin@fireandicehookah.com', password:'admin123', role:'admin' };
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const EMP_COLORS   = ['#ff6b2b','#00d4ff','#8b5cf6','#10b981','#f59e0b','#ec4899','#06c2c2','#ffab3c'];
 
-// ──────────── UTILS ────────────
 const payPeriodOf = (dateStr) => {
   if (!dateStr) return '';
   const [y,m,d] = dateStr.split('-').map(Number);
   const lastDay = new Date(y, m, 0).getDate();
-  return d <= 15
-    ? `${y}-${String(m).padStart(2,'0')}-01-15`
-    : `${y}-${String(m).padStart(2,'0')}-16-${lastDay}`;
+  return d <= 15 ? `${y}-${String(m).padStart(2,'0')}-01-15` : `${y}-${String(m).padStart(2,'0')}-16-${lastDay}`;
 };
 const fmtPP = (pp) => {
   if (!pp) return '—';
   const parts = pp.split('-');
-  const y=parts[0], m=parseInt(parts[1])-1, s=parseInt(parts[2]), e=parseInt(parts[3]);
-  return `${MONTHS_SHORT[m]} ${s}–${e}, ${y}`;
+  return `${MONTHS_SHORT[parseInt(parts[1])-1]} ${parseInt(parts[2])}–${parseInt(parts[3])}, ${parts[0]}`;
 };
 const calcHours = (start, end) => {
   if (!start || !end) return 0;
@@ -131,10 +99,6 @@ const calcHours = (start, end) => {
   if (mins <= 0) mins += 1440;
   return Math.round(mins * 10 / 60) / 10;
 };
-const calcPay = (hours, rate) => {
-  const reg = Math.min(hours, 80), ot = Math.max(0, hours-80);
-  return Math.round((reg*rate + ot*rate*1.5)*100)/100;
-};
 const nextPayday = () => {
   const now = new Date();
   const d = now.getDate(), m = now.getMonth(), y = now.getFullYear();
@@ -142,32 +106,38 @@ const nextPayday = () => {
   const days = Math.max(0, Math.ceil((target - now) / 86400000));
   return { label: target.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}), days };
 };
-const curPP  = () => payPeriodOf(new Date().toISOString().split('T')[0]);
-const money  = (n) => '$' + (+(n||0)).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-const hrs    = (h) => (Math.round((h||0)*10)/10) + 'h';
-const uid    = () => Math.random().toString(36).slice(2,10);
-const empClr = (i) => EMP_COLORS[i % EMP_COLORS.length];
+const money = (n) => '$' + (+(n||0)).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const hrs = (h) => (Math.round((h||0)*10)/10) + 'h';
+const uid = () => Math.random().toString(36).slice(2,10);
+const curPP = () => payPeriodOf(new Date().toISOString().split('T')[0]);
 
 // ──────────── STORAGE ────────────
 const store = {
   get: (k,def=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
   set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
-  del: (k)   => localStorage.removeItem(k),
 };
-const getUsers   = () => store.get('dh4_users',   []);
-const getShifts  = () => store.get('dh4_shifts',  []);
-const getPayroll = () => store.get('dh4_payroll', []);
 
-// ──────────── CSV ────────────
+// ──────────── CSV EXPORT LOGIC (UPDATED FOR EXCEL) ────────────
 function downloadCSV(rows, filename) {
   if (!rows || !rows.length) return false;
   const headers = Object.keys(rows[0]);
-  const lines = [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]??'').replace(/"/g,'""')}"`).join(','))];
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type:'text/csv;charset=utf-8;' }));
-  a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(a.href); return true;
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => headers.map(h => {
+      let val = row[h] === null || row[h] === undefined ? '' : row[h];
+      // Escape quotes
+      return `"${String(val).replace(/"/g, '""')}"`;
+    }).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  return true;
 }
 
 // ──────────── CONTEXTS ────────────
@@ -175,29 +145,19 @@ const ToastCtx = createContext(null);
 const AuthCtx  = createContext(null);
 const DataCtx  = createContext(null);
 
-// ──────────── TOAST ────────────
 function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const push = useCallback((msg, type='success') => {
     const id = uid();
-    setToasts(t => [...t.slice(-3), { id, msg, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3500);
+    setToasts(t => [...t.slice(-2), { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
   }, []);
-  const styles = {
-    success: 'from-emerald-600 to-teal-600',
-    error:   'from-red-600 to-rose-600',
-    warning: 'from-amber-500 to-orange-500',
-    info:    'from-[#ff6b2b] to-[#ffab3c]',
-  };
-  const icons = { success:'✓', error:'✕', warning:'⚠', info:'ℹ' };
   return (
     <ToastCtx.Provider value={push}>
       {children}
-      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none">
+      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
-          <div key={t.id} className={`toast-in flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold min-w-[280px] pointer-events-auto text-white bg-gradient-to-r ${styles[t.type]}`}
-            style={{backdropFilter:'blur(20px)'}}>
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">{icons[t.type]}</span>
+          <div key={t.id} className={`toast-in flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-bold text-white pointer-events-auto ${t.type==='error'?'bg-red-600':'bg-orange-600'}`}>
             {t.msg}
           </div>
         ))}
@@ -205,1194 +165,453 @@ function ToastProvider({ children }) {
     </ToastCtx.Provider>
   );
 }
-const useToast = () => useContext(ToastCtx);
 
-// ──────────── AUTH ────────────
-const SECURITY_QUESTIONS = [
-  "What was the name of your first pet?",
-  "What is your mother's maiden name?",
-  "What city were you born in?",
-  "What was the name of your primary school?",
-  "What is the name of the street you grew up on?",
-  "What was your childhood nickname?",
-  "What is the middle name of your oldest sibling?",
-  "What was the make of your first car?",
-];
-
-function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('dh4_sess') || 'null');
-      if (!s) return null;
-      if (s.role === 'admin') return s;
-      const emp = getUsers().find(u => u.id === s.id);
-      return (emp && emp.status === 'approved') ? s : null;
-    } catch { return null; }
-  });
-
-  const login = (email, password) => {
-    const e = (email || '').trim().toLowerCase();
-    if ((e === 'admin' || e === ADMIN.email) && password === ADMIN.password) {
-      localStorage.setItem('dh4_sess', JSON.stringify(ADMIN));
-      setUser(ADMIN); return { ok: true };
-    }
-    const u = getUsers().find(u => u.email.toLowerCase() === e);
-    if (!u)                return { ok:false, msg:'No account found with that email.' };
-    if (u.password !== password) return { ok:false, msg:'Incorrect password.' };
-    if (u.status === 'pending')  return { ok:false, msg:'Account pending admin approval.', warn:true };
-    if (u.status === 'rejected') return { ok:false, msg:'Account not approved. Contact your manager.' };
-    const sess = { id:u.id, name:u.name, email:u.email, role:'employee', empId:u.id, hourlyRate:u.hourlyRate, jobTitle:u.jobTitle };
-    localStorage.setItem('dh4_sess', JSON.stringify(sess));
-    setUser(sess); return { ok: true };
-  };
-
-  const register = ({ name, email, password, hourlyRate, jobTitle, securityQuestion, securityAnswer }) => {
-    const e = (email||'').trim().toLowerCase();
-    if (e === ADMIN.email || e === 'admin') return { ok:false, msg:'Email not available.' };
-    const users = getUsers();
-    if (users.find(u => u.email.toLowerCase() === e)) return { ok:false, msg:'An account with this email already exists.' };
-    const emp = { id:'u'+uid(), name:(name||'').trim(), email:e, password,
-      hourlyRate:parseFloat(hourlyRate)||15, jobTitle:(jobTitle||''),
-      securityQuestion:(securityQuestion||'').trim(), securityAnswer:(securityAnswer||'').trim().toLowerCase(),
-      role:'employee', status:'pending', createdAt:new Date().toISOString() };
-    store.set('dh4_users', [...users, emp]);
-    return { ok:true, email:e };
-  };
-
-  const resetPassword = (email, answer, newPassword) => {
-    const e = (email||'').trim().toLowerCase();
-    const users = getUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === e);
-    if (idx === -1) return { ok:false, msg:'No account found with that email.' };
-    const u = users[idx];
-    if (!u.securityQuestion) return { ok:false, msg:'No security question set. Contact admin.' };
-    if ((answer||'').trim().toLowerCase() !== u.securityAnswer) return { ok:false, msg:'Incorrect answer. Please try again.' };
-    users[idx] = { ...u, password: newPassword };
-    store.set('dh4_users', users); return { ok:true };
-  };
-
-  const getSecurityQuestion = (email) => {
-    const e = (email||'').trim().toLowerCase();
-    const u = getUsers().find(u => u.email.toLowerCase() === e);
-    if (!u) return { ok:false, msg:'No account found with that email.' };
-    if (!u.securityQuestion) return { ok:false, msg:'No security question set. Contact admin.' };
-    return { ok:true, question: u.securityQuestion };
-  };
-
-  const logout = () => { localStorage.removeItem('dh4_sess'); setUser(null); };
-  return <AuthCtx.Provider value={{ user, login, register, logout, resetPassword, getSecurityQuestion }}>{children}</AuthCtx.Provider>;
-}
-const useAuth = () => useContext(AuthCtx);
-
-// ──────────── DATA ────────────
+// ──────────── DATA PROVIDER ────────────
 function DataProvider({ children }) {
-  const { user } = useAuth();
-  const toast    = useToast();
-  const [employees, setEmp] = useState([]);
-  const [shifts,    setSh]  = useState([]);
-  const [payroll,   setPr]  = useState([]);
-  const reload = useCallback(() => {
-    setEmp(getUsers().filter(u => u.role === 'employee'));
-    setSh(getShifts()); setPr(getPayroll());
-  }, []);
-  useEffect(() => { reload(); }, [user?.id]);
+  const toast = useContext(ToastCtx);
+  const [employees, setEmp] = useState(() => store.get('dh4_users', []).filter(u => u.role === 'employee'));
+  const [shifts, setSh] = useState(() => store.get('dh4_shifts', []));
+  const [payroll, setPr] = useState(() => store.get('dh4_payroll', []));
+
+  const sync = (u, s, p) => {
+    if(u){ store.set('dh4_users', [...u, ADMIN]); setEmp(u.filter(x=>x.role==='employee')); }
+    if(s){ store.set('dh4_shifts', s); setSh(s); }
+    if(p){ store.set('dh4_payroll', p); setPr(p); }
+  };
 
   const addShift = (data) => {
-    const sh = { id:'s'+uid(), ...data, hours:calcHours(data.startTime,data.endTime), payPeriod:payPeriodOf(data.date), locked:false, createdAt:new Date().toISOString() };
-    const all = [...getShifts(), sh]; store.set('dh4_shifts', all); setSh(all); toast('Shift added!');
+    const ns = { id:'s'+uid(), ...data, hours:calcHours(data.startTime, data.endTime), payPeriod:payPeriodOf(data.date), locked:false };
+    sync(null, [...shifts, ns], null);
+    toast('Shift added!');
   };
+
   const editShift = (id, data) => {
-    const all = getShifts().map(s => s.id===id ? { ...s, ...data, hours:calcHours(data.startTime,data.endTime), payPeriod:payPeriodOf(data.date) } : s);
-    store.set('dh4_shifts', all); setSh(all); toast('Shift updated!');
+    const ns = shifts.map(s => s.id===id ? {...s, ...data, hours:calcHours(data.startTime, data.endTime), payPeriod:payPeriodOf(data.date)} : s);
+    sync(null, ns, null);
+    toast('Shift updated!');
   };
+
   const delShift = (id) => {
-    const all = getShifts().filter(s => s.id!==id); store.set('dh4_shifts', all); setSh(all); toast('Shift deleted.','info');
+    sync(null, shifts.filter(s=>s.id!==id), null);
+    toast('Shift deleted');
   };
-  const updateEmp = (id, data) => {
-    const all = getUsers().map(u => u.id===id ? { ...u, ...data } : u);
-    store.set('dh4_users', all); setEmp(all.filter(u => u.role==='employee')); toast('Employee updated!');
-  };
-  const approveEmp = (id) => { updateEmp(id, { status:'approved' }); toast('Employee approved!'); };
-  const rejectEmp  = (id) => { updateEmp(id, { status:'rejected' }); toast('Employee rejected.','warning'); };
-  const removeEmp  = (id) => {
-    const users=getUsers().filter(u=>u.id!==id), sh=getShifts().filter(s=>s.empId!==id), pr=getPayroll().filter(p=>p.empId!==id);
-    store.set('dh4_users',users); store.set('dh4_shifts',sh); store.set('dh4_payroll',pr);
-    setEmp(users.filter(u=>u.role==='employee')); setSh(sh); setPr(pr); toast('Employee removed.','info');
-  };
-  const genPayroll = (pp) => {
-    const approved = employees.filter(e=>e.status==='approved');
-    const ppShifts = shifts.filter(s=>s.payPeriod===pp);
-    const existing = getPayroll(); const recs = [];
-    approved.forEach(emp => {
-      const es = ppShifts.filter(s=>s.empId===emp.id); if (!es.length) return;
-      const totalH = Math.round(es.reduce((a,s)=>a+(s.hours||0),0)*10)/10;
-      const reg=Math.min(totalH,80), ot=Math.max(0,totalH-80), pay=calcPay(totalH,emp.hourlyRate);
-      const exIdx = existing.findIndex(p=>p.empId===emp.id&&p.payPeriod===pp);
-      recs.push({ id:exIdx>=0?existing[exIdx].id:'p'+uid(), empId:emp.id, empName:emp.name, empEmail:emp.email, jobTitle:emp.jobTitle||'', payPeriod:pp,
-        totalHours:totalH, regularHours:Math.round(reg*10)/10, overtimeHours:Math.round(ot*10)/10,
-        hourlyRate:emp.hourlyRate, regularPay:Math.round(reg*emp.hourlyRate*100)/100, overtimePay:Math.round(ot*emp.hourlyRate*1.5*100)/100,
-        totalPay:pay, status:exIdx>=0?existing[exIdx].status:'pending', createdAt:exIdx>=0?existing[exIdx].createdAt:new Date().toISOString() });
-    });
-    if (!recs.length) { toast('No approved employees with shifts this period.','warning'); return 0; }
-    const merged = [...existing.filter(p=>!recs.find(r=>r.empId===p.empId&&r.payPeriod===p.payPeriod)), ...recs];
-    store.set('dh4_payroll', merged); setPr(merged); toast(`Payroll generated for ${fmtPP(pp)}!`); return recs.length;
-  };
+
   const markPaid = (id) => {
-    const all = getPayroll().map(p => p.id===id ? { ...p, status:'paid', paidAt:new Date().toISOString() } : p);
-    store.set('dh4_payroll',all); setPr(all);
-    const pr=all.find(p=>p.id===id);
-    const shAll=getShifts().map(s=>(s.empId===pr?.empId&&s.payPeriod===pr?.payPeriod)?{...s,locked:true}:s);
-    store.set('dh4_shifts',shAll); setSh(shAll); toast('Marked as paid! Shifts locked.','success');
+    const updatedPr = payroll.map(p => p.id===id ? {...p, status:'paid'} : p);
+    const p = updatedPr.find(x=>x.id===id);
+    const updatedSh = shifts.map(s => (s.empId===p.empId && s.payPeriod===p.payPeriod) ? {...s, locked:true} : s);
+    sync(null, updatedSh, updatedPr);
+    toast('Marked as Paid');
   };
-  const exportShifts = (shiftList) => {
-    const rows = shiftList.map(s => { const emp=employees.find(e=>e.id===s.empId);
-      return {'Employee Name':emp?.name||'Unknown','Employee Email':emp?.email||'','Job Title':emp?.jobTitle||'',
-        'Date':s.date,'Start Time':s.startTime,'End Time':s.endTime,'Hours Worked':s.hours,'Notes':s.notes||'','Pay Period':fmtPP(s.payPeriod),'Status':s.locked?'Locked':'Active'}; });
-    downloadCSV(rows,`fire_and_ice_shifts_${new Date().toISOString().split('T')[0]}.csv`) ? toast('Shifts exported!') : toast('No shifts to export.','warning');
-  };
-  const exportPayroll = (payList) => {
-    const rows = payList.map(p => ({'Employee Name':p.empName,'Employee Email':p.empEmail||'','Job Title':p.jobTitle||'',
-      'Pay Period':fmtPP(p.payPeriod),'Regular Hours':p.regularHours,'Overtime Hours':p.overtimeHours,'Total Hours':p.totalHours,
-      'Hourly Rate ($)':p.hourlyRate,'Regular Pay ($)':p.regularPay,'Overtime Pay ($)':p.overtimePay,'Total Pay ($)':p.totalPay,'Status':p.status}));
-    downloadCSV(rows,`fire_and_ice_payroll_${new Date().toISOString().split('T')[0]}.csv`) ? toast('Payroll exported!') : toast('No payroll to export.','warning');
-  };
-  return <DataCtx.Provider value={{ employees,shifts,payroll,addShift,editShift,delShift,updateEmp,approveEmp,rejectEmp,removeEmp,genPayroll,markPaid,exportShifts,exportPayroll,reload }}>{children}</DataCtx.Provider>;
-}
-const useData = () => useContext(DataCtx);
 
-// ═══════════════════════════════════════════
-// UI COMPONENTS — FIRE & ICE DESIGN
-// ═══════════════════════════════════════════
-
-const Btn = ({children,onClick,type='button',variant='primary',size='md',full=false,disabled=false,className=''}) => {
-  const base = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 select-none outline-none ${full?'w-full':''} ${disabled?'opacity-40 pointer-events-none':''}`;
-  const sz = { xs:'px-3 py-1.5 text-xs', sm:'px-4 py-2 text-xs', md:'px-5 py-2.5 text-sm', lg:'px-7 py-3.5 text-sm' };
-  const v = {
-    primary:   'shimmer-btn text-white glow-btn active:scale-[.97] font-bold',
-    secondary: 'glass glass-hover text-slate-200 border border-white/10 hover:border-white/25',
-    success:   'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90 active:scale-[.97]',
-    danger:    'bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400',
-    ice:       'bg-gradient-to-r from-[#00d4ff] to-[#06c2c2] text-slate-900 font-bold hover:opacity-90 active:scale-[.97] glow-btn-ice',
-    ghost:     'hover:bg-white/5 text-slate-400 hover:text-slate-200',
-    export:    'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400',
-    amber:     'bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400',
+  const genPayroll = (pp) => {
+    const existing = [...payroll];
+    const ppShifts = shifts.filter(s => s.payPeriod === pp);
+    const results = [];
+    employees.filter(e=>e.status==='approved').forEach(emp => {
+      const es = ppShifts.filter(s => s.empId === emp.id);
+      if(!es.length) return;
+      const totalH = es.reduce((a,s)=>a+s.hours, 0);
+      const reg = Math.min(80, totalH), ot = Math.max(0, totalH-80);
+      const pay = (reg * emp.hourlyRate) + (ot * emp.hourlyRate * 1.5);
+      results.push({
+        id: 'p'+uid(), empId: emp.id, empName: emp.name, payPeriod: pp,
+        totalHours: totalH, regularHours: reg, overtimeHours: ot,
+        hourlyRate: emp.hourlyRate, totalPay: pay, status: 'pending'
+      });
+    });
+    const final = [...existing.filter(p=>p.payPeriod!==pp), ...results];
+    sync(null, null, final);
+    toast(`Payroll generated for ${results.length} staff`);
   };
-  return <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${sz[size]} ${v[variant]||v.secondary} ${className}`}>{children}</button>;
-};
 
-const Field = ({ label, error, hint, className='', textarea=false, dark=false, ...p }) => {
-  const base = `w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 inp-focus ${
-    dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-orange-500/60'
-      : 'bg-white/5 border border-white/10 text-white placeholder:text-slate-500'
-  } ${error ? 'border-red-500/50 ring-2 ring-red-500/20' : ''}`;
+  // UPDATED EXPORT FUNCTIONS FOR EXCEL CALCULATIONS
+  const exportShifts = (list) => {
+    const rows = list.map(s => {
+      const emp = employees.find(e => e.id === s.empId);
+      return {
+        'Date': s.date,
+        'Employee': emp?.name || 'Unknown',
+        'Start': s.startTime,
+        'End': s.endTime,
+        'Hours Worked': s.hours, // RAW NUMBER
+        'Pay Period': s.payPeriod,
+        'Notes': s.notes || ''
+      };
+    });
+    downloadCSV(rows, `shifts_export.csv`);
+  };
+
+  const exportPayroll = (list) => {
+    const rows = list.map(p => ({
+      'Employee': p.empName,
+      'Pay Period': p.payPeriod,
+      'Regular Hours': p.regularHours,   // RAW NUMBER
+      'Overtime Hours': p.overtimeHours, // RAW NUMBER
+      'Total Hours': p.totalHours,       // RAW NUMBER
+      'Hourly Rate': p.hourlyRate,       // RAW NUMBER
+      'Total Pay': p.totalPay,           // RAW NUMBER
+      'Status': p.status
+    }));
+    downloadCSV(rows, `payroll_export.csv`);
+  };
+
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
-      {label && <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{label}</label>}
-      {textarea ? <textarea className={base+' resize-none'} {...p}/> : <input className={base} {...p}/>}
-      {error && <p className="text-xs text-red-400 font-medium">{error}</p>}
-      {hint  && <p className="text-xs text-slate-500">{hint}</p>}
-    </div>
+    <DataCtx.Provider value={{ employees, shifts, payroll, addShift, editShift, delShift, genPayroll, markPaid, exportShifts, exportPayroll, sync }}>
+      {children}
+    </DataCtx.Provider>
   );
+}
+
+// ──────────── COMPONENTS ────────────
+const Btn = ({children, onClick, variant='primary', size='md', full=false, type="button"}) => {
+  const base = `inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all active:scale-95 ${full?'w-full':''}`;
+  const variants = {
+    primary: 'shimmer-btn text-white glow-btn shadow-lg',
+    secondary: 'glass text-slate-300 hover:text-white border-white/10',
+    danger: 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20',
+    success: 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+  };
+  const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-5 py-2.5 text-sm', lg: 'px-8 py-4 text-base' };
+  return <button type={type} onClick={onClick} className={`${base} ${variants[variant]} ${sizes[size]}`}>{children}</button>;
 };
 
-const GSelect = ({ label, children, className='', ...p }) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
-    {label && <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{label}</label>}
-    <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none inp-focus transition-all [&>option]:bg-[#0d1120]" {...p}>{children}</select>
+const Stat = ({label, value, sub, icon, type='fire'}) => (
+  <div className={`rounded-2xl p-5 border ${type==='fire'?'stat-fire-bg':'stat-ice-bg'}`}>
+    <div className="flex justify-between items-start mb-4">
+      <div className="w-10 h-10 rounded-xl grad-both flex items-center justify-center text-xl">{icon}</div>
+    </div>
+    <div className="text-2xl font-black text-white">{value}</div>
+    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{label}</div>
+    {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
   </div>
 );
 
-const Modal = ({ open, onClose, title, subtitle, children, size='md', footer }) => {
-  if (!open) return null;
-  const w = { sm:'max-w-sm', md:'max-w-md', lg:'max-w-2xl', xl:'max-w-4xl' };
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{background:'rgba(4,6,15,.85)',backdropFilter:'blur(12px)'}}
-      onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className={`fade-up glass rounded-3xl shadow-2xl w-full ${w[size]} max-h-[92vh] flex flex-col overflow-hidden`}
-        style={{border:'1px solid rgba(255,107,43,.2)',boxShadow:'0 25px 80px rgba(0,0,0,.6),0 0 60px rgba(255,107,43,.05)'}}>
-        <div className="flex items-start justify-between px-7 pt-7 pb-5 border-b border-white/5 shrink-0">
-          <div>
-            <h2 className="text-lg font-bold text-white">{title}</h2>
-            {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
-          </div>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 hover:bg-white/10 hover:text-white transition-all text-xl leading-none mt-0.5">×</button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-7 py-6">{children}</div>
-        {footer && <div className="px-7 pb-6 pt-3 border-t border-white/5 shrink-0 flex gap-3 justify-end">{footer}</div>}
-      </div>
-    </div>
-  );
-};
-
-const Chip = ({ children, color='slate' }) => {
-  const c = {
-    slate:  'bg-white/5 text-slate-400 border border-white/10',
-    fire:   'bg-orange-500/15 text-orange-400 border border-orange-500/25',
-    ice:    'bg-cyan-500/15 text-cyan-400 border border-cyan-500/25',
-    green:  'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-    yellow: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/25',
-    red:    'bg-red-500/15 text-red-400 border border-red-500/25',
-    purple: 'bg-purple-500/15 text-purple-400 border border-purple-500/25',
-    indigo: 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/25',
-    amber:  'bg-amber-500/15 text-amber-400 border border-amber-500/25',
-    pink:   'bg-pink-500/15 text-pink-400 border border-pink-500/25',
-  };
-  return <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${c[color]||c.slate}`}>{children}</span>;
-};
-
-const Avatar = ({ name='?', size='sm', color='#ff6b2b' }) => {
-  const s = { xs:'w-6 h-6 text-[10px]', sm:'w-8 h-8 text-xs', md:'w-10 h-10 text-sm', lg:'w-12 h-12 text-base' };
-  return (
-    <div className={`${s[size]} rounded-full flex items-center justify-center font-bold text-white shrink-0`}
-      style={{background:`linear-gradient(135deg,${color},${color}99)`}}>
-      {(name||'?')[0].toUpperCase()}
-    </div>
-  );
-};
-
-const StatCard = ({ icon, label, value, sub, type='fire' }) => {
-  const bg = { fire:'stat-fire-bg', ice:'stat-ice-bg', purple:'stat-purple-bg', green:'stat-green-bg' };
-  const iconBg = { fire:'from-[#ff6b2b] to-[#ffab3c]', ice:'from-[#00d4ff] to-[#06c2c2]', purple:'from-purple-500 to-violet-600', green:'from-emerald-500 to-teal-600' };
-  return (
-    <div className={`${bg[type]||bg.fire} rounded-2xl p-5 transition-all duration-200 hover:scale-[1.02]`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-11 h-11 bg-gradient-to-br ${iconBg[type]} rounded-xl flex items-center justify-center text-white text-xl shadow-lg`}
-          style={{boxShadow:type==='fire'?'0 4px 15px rgba(255,107,43,.4)':type==='ice'?'0 4px 15px rgba(0,212,255,.4)':'0 4px 15px rgba(139,92,246,.4)'}}>
-          {icon}
-        </div>
-      </div>
-      <div className="text-2xl font-black text-white tracking-tight">{value}</div>
-      <div className="text-sm font-medium text-slate-400 mt-1">{label}</div>
-      {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
-    </div>
-  );
-};
-
-// ═══════════════════════════════════════════
-// LOGIN PAGE
-// ═══════════════════════════════════════════
-function LoginPage() {
-  const { login, register, resetPassword, getSecurityQuestion } = useAuth();
-  const toast = useToast();
-  const [tab, setTab] = useState('login');
-  const [form, setForm] = useState({ name:'', email:'', password:'', confirm:'', hourlyRate:'15', jobTitle:'', securityQuestion:SECURITY_QUESTIONS[0], securityAnswer:'' });
-  const [errs, setErrs] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [fpEmail,setFpEmail]=[useState('')[0],useState('')[1]];
-  const [fpQ,setFpQ] = useState('');
-  const [fpAns,setFpAns] = useState('');
-  const [fpNew,setFpNew] = useState('');
-  const [fpConf,setFpConf] = useState('');
-  const [fpErr,setFpErr] = useState('');
-  const [_fpEmail,_setFpEmail] = useState('');
-
-  const set = (k,v) => { setForm(f=>({...f,[k]:v})); setErrs(e=>({...e,[k]:''})); };
-  const goTab = (t) => { setTab(t); setErrs({}); setFpErr(''); };
-
-  const doLogin = async () => {
-    const e={};
-    if(!form.email)    e.email='Required';
-    if(!form.password) e.password='Required';
-    setErrs(e); if(Object.keys(e).length) return;
-    setLoading(true);
-    const r = login(form.email, form.password);
-    setLoading(false);
-    if (!r.ok) { toast(r.msg, r.warn?'warning':'error'); setErrs({password:r.msg}); }
-  };
-
-  const doRegister = () => {
-    const e={};
-    if(!form.name)                   e.name='Required';
-    if(!form.email)                  e.email='Required';
-    if(!form.password)               e.password='Required';
-    if(form.password.length<4)       e.password='Min 4 characters';
-    if(form.password!==form.confirm) e.confirm='Passwords do not match';
-    if(!form.securityAnswer.trim())  e.securityAnswer='Required for recovery';
-    setErrs(e); if(Object.keys(e).length) return;
-    const r = register(form);
-    if(!r.ok) { toast(r.msg,'error'); return; }
-    toast('Account created! Awaiting admin approval.','info');
-    goTab('login'); setForm(f=>({...f,name:'',confirm:'',password:'',securityAnswer:''}));
-  };
-
-  const doFpEmail = () => {
-    setFpErr('');
-    if(!_fpEmail.trim()) { setFpErr('Please enter your email.'); return; }
-    const r = getSecurityQuestion(_fpEmail);
-    if(!r.ok) { setFpErr(r.msg); return; }
-    setFpQ(r.question); setFpAns(''); setFpNew(''); setFpConf('');
-    goTab('forgot-question');
-  };
-  const doFpAnswer = () => {
-    setFpErr('');
-    if(!fpAns.trim()) { setFpErr('Please enter your answer.'); return; }
-    const u = getUsers().find(u=>u.email.toLowerCase()===_fpEmail.trim().toLowerCase());
-    if(!u||fpAns.trim().toLowerCase()!==u.securityAnswer) { setFpErr('Incorrect answer.'); return; }
-    goTab('forgot-reset');
-  };
-  const doFpReset = () => {
-    setFpErr('');
-    if(!fpNew||fpNew.length<4) { setFpErr('Min 4 characters.'); return; }
-    if(fpNew!==fpConf) { setFpErr('Passwords do not match.'); return; }
-    const r = resetPassword(_fpEmail, fpAns, fpNew);
-    if(!r.ok) { setFpErr(r.msg); return; }
-    toast('Password reset! You can now sign in.','success');
-    setFpErr(''); goTab('login');
-  };
-
-  const isForgot = tab.startsWith('forgot');
-
-  // Dark input style shared
-  const di = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition-all inp-focus";
+// ──────────── MAIN PAGES ────────────
+function Dashboard() {
+  const { user } = useContext(AuthCtx);
+  const { shifts, payroll, employees } = useContext(DataCtx);
+  const pp = curPP();
+  const pd = nextPayday();
+  
+  const myShifts = user.role==='admin' ? shifts : shifts.filter(s=>s.empId===user.id);
+  const curShifts = myShifts.filter(s=>s.payPeriod===pp);
+  const totalHrs = curShifts.reduce((a,s)=>a+s.hours, 0);
+  
+  const curPay = user.role==='admin' 
+    ? payroll.filter(p=>p.payPeriod===pp).reduce((a,p)=>a+p.totalPay, 0)
+    : (payroll.find(p=>p.empId===user.id && p.payPeriod===pp)?.totalPay || 0);
 
   return (
-    <div className="min-h-screen flex bg-mesh overflow-hidden">
-      {/* Animated orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[10%] left-[10%] w-80 h-80 rounded-full float" style={{background:'radial-gradient(circle,rgba(255,107,43,.12) 0%,transparent 70%)',filter:'blur(40px)'}}/>
-        <div className="absolute bottom-[15%] right-[10%] w-96 h-96 rounded-full" style={{background:'radial-gradient(circle,rgba(0,212,255,.1) 0%,transparent 70%)',filter:'blur(50px)',animation:'float 6s ease-in-out infinite reverse'}}/>
-        <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full" style={{background:'radial-gradient(circle,rgba(139,92,246,.06) 0%,transparent 70%)',filter:'blur(40px)'}}/>
+    <div className="p-8 space-y-6 fade-up">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Stat icon="⏱" label="Hours This Period" value={hrs(totalHrs)} sub={`${curShifts.length} shifts found`} />
+        <Stat icon="💵" label="Estimated Pay" value={money(curPay)} type="ice" sub="Gross before taxes" />
+        <Stat icon="📅" label="Next Payday" value={pd.days + ' Days'} type="fire" sub={pd.label} />
+        <Stat icon="👥" label="Team Size" value={employees.filter(e=>e.status==='approved').length} type="ice" sub="Active employees" />
       </div>
-
-      {/* Left branding */}
-      <div className="hidden lg:flex flex-col justify-between w-[44%] p-14 relative z-10">
-        <div>
-          {/* Logo */}
-          <div className="flex items-center gap-4 mb-16">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl grad-both flex items-center justify-center text-2xl shadow-xl glow-fire">🔥</div>
-              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full grad-ice flex items-center justify-center text-[10px]">❄</div>
-            </div>
-            <div>
-              <div className="text-white font-black text-sm tracking-[.2em] uppercase" style={{fontFamily:'Cinzel,serif'}}>Fire & Ice</div>
-              <div className="text-slate-500 text-[10px] tracking-widest uppercase font-medium">Hookah Lounge</div>
-            </div>
-          </div>
-          <h1 className="font-black leading-tight mb-6" style={{fontSize:'3.4rem',fontFamily:'Cinzel,serif',lineHeight:1.15}}>
-            <span className="text-white">Staff</span><br/>
-            <span className="grad-text">Portal</span>
-          </h1>
-          <p className="text-slate-400 text-lg leading-relaxed max-w-sm font-light">Track shifts, manage payroll, and keep your team in sync — all from one place.</p>
-        </div>
-        <div className="space-y-4">
-          {[['🔥','Semi-monthly payroll, auto-calculated'],['📊','Real-time hours & pay dashboard'],['🔒','Role-based access for every team member']].map(([ic,tx])=>(
-            <div key={tx} className="flex items-center gap-3.5">
-              <div className="w-9 h-9 glass rounded-xl flex items-center justify-center text-base shrink-0">{ic}</div>
-              <span className="text-slate-400 text-sm font-medium">{tx}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-14 relative z-10">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
-            <div className="w-12 h-12 rounded-2xl grad-both flex items-center justify-center text-xl glow-fire">🔥</div>
-            <div>
-              <div className="text-white font-black text-base tracking-wider" style={{fontFamily:'Cinzel,serif'}}>Fire & Ice</div>
-              <div className="text-slate-500 text-[10px] tracking-widest uppercase">Hookah Lounge</div>
-            </div>
-          </div>
-
-          {/* Card */}
-          <div className="glass rounded-3xl overflow-hidden" style={{border:'1px solid rgba(255,107,43,.2)',boxShadow:'0 30px 80px rgba(0,0,0,.5),0 0 60px rgba(255,107,43,.06)'}}>
-
-            {/* Tabs */}
-            {!isForgot && (
-              <div className="flex border-b border-white/5">
-                {[['login','Sign In'],['register','Create Account']].map(([k,l])=>(
-                  <button key={k} onClick={()=>goTab(k)}
-                    className={`flex-1 py-4 text-sm font-bold transition-all ${tab===k?'text-white border-b-2 border-orange-500 bg-orange-500/5':'text-slate-500 hover:text-slate-300'}`}>
-                    {l}
-                  </button>
-                ))}
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass rounded-3xl p-6 border-white/5">
+          <h3 className="text-lg font-black mb-4 flex items-center gap-2">⏱ Recent Shifts</h3>
+          <div className="space-y-3">
+            {myShifts.slice(-5).reverse().map(s => (
+              <div key={s.id} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                <div>
+                  <div className="text-sm font-bold">{new Date(s.date).toLocaleDateString()}</div>
+                  <div className="text-xs text-slate-500 font-mono">{s.startTime} - {s.endTime}</div>
+                </div>
+                <div className="text-orange-500 font-black">{hrs(s.hours)}</div>
               </div>
-            )}
-
-            <div className="p-8">
-
-              {/* SIGN IN */}
-              {tab==='login' && (
-                <div className="space-y-5">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-black text-white mb-1" style={{fontFamily:'Cinzel,serif'}}>Welcome Back</h2>
-                    <p className="text-slate-500 text-sm">Sign in to your staff account</p>
-                  </div>
-                  <Field label="Email or Username" type="text" placeholder="your@email.com or admin" value={form.email} onChange={e=>set('email',e.target.value)} error={errs.email} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
-                  <div>
-                    <Field label="Password" type="password" placeholder="Your password" value={form.password} onChange={e=>set('password',e.target.value)} error={errs.password} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
-                    <div className="text-right mt-1.5">
-                      <button onClick={()=>{_setFpEmail(form.email);goTab('forgot-email');}}
-                        className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors">Forgot password?</button>
-                    </div>
-                  </div>
-                  <Btn full onClick={doLogin} size="lg" disabled={loading}>{loading?'Signing in…':'Sign In →'}</Btn>
-                  <p className="text-center text-sm text-slate-500">No account? <span className="text-orange-400 cursor-pointer font-semibold hover:text-orange-300 transition-colors" onClick={()=>goTab('register')}>Create one</span></p>
-                </div>
-              )}
-
-              {/* REGISTER */}
-              {tab==='register' && (
-                <div className="space-y-4">
-                  <div className="text-center mb-5">
-                    <h2 className="text-2xl font-black text-white mb-1" style={{fontFamily:'Cinzel,serif'}}>Join The Team</h2>
-                    <p className="text-slate-500 text-sm">Admin approves before you can sign in</p>
-                  </div>
-                  <Field label="Full Name" placeholder="Sarah Johnson" value={form.name} onChange={e=>set('name',e.target.value)} error={errs.name}/>
-                  <Field label="Email" type="email" placeholder="your@email.com" value={form.email} onChange={e=>set('email',e.target.value)} error={errs.email}/>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Password" type="password" placeholder="Min 4 chars" value={form.password} onChange={e=>set('password',e.target.value)} error={errs.password}/>
-                    <Field label="Confirm" type="password" placeholder="Repeat" value={form.confirm} onChange={e=>set('confirm',e.target.value)} error={errs.confirm}/>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Hourly Rate ($)" type="number" min="0" step="0.5" placeholder="15.00" value={form.hourlyRate} onChange={e=>set('hourlyRate',e.target.value)}/>
-                    <Field label="Job Title" placeholder="Barista, Server…" value={form.jobTitle} onChange={e=>set('jobTitle',e.target.value)}/>
-                  </div>
-                  <div className="pt-3 border-t border-white/5">
-                    <p className="text-xs text-slate-500 mb-3 flex items-center gap-1.5"><span>🔐</span>Set a security question for password recovery.</p>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1.5">Security Question</label>
-                        <select value={form.securityQuestion} onChange={e=>set('securityQuestion',e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none inp-focus [&>option]:bg-[#0d1120]">
-                          {SECURITY_QUESTIONS.map(q=><option key={q} value={q}>{q}</option>)}
-                        </select>
-                      </div>
-                      <Field label="Your Answer" placeholder="Answer (not case-sensitive)" value={form.securityAnswer} onChange={e=>set('securityAnswer',e.target.value)} error={errs.securityAnswer}/>
-                    </div>
-                  </div>
-                  <Btn full onClick={doRegister} size="lg">Create Account →</Btn>
-                  <p className="text-center text-sm text-slate-500">Already have an account? <span className="text-orange-400 cursor-pointer font-semibold hover:text-orange-300" onClick={()=>goTab('login')}>Sign in</span></p>
-                </div>
-              )}
-
-              {/* FORGOT — EMAIL */}
-              {tab==='forgot-email' && (
-                <div className="space-y-5">
-                  <div className="text-center mb-4">
-                    <div className="w-16 h-16 grad-fire rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 glow-fire">🔑</div>
-                    <h2 className="text-xl font-black text-white" style={{fontFamily:'Cinzel,serif'}}>Reset Password</h2>
-                    <p className="text-slate-500 text-sm mt-1">Enter your registered email</p>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1.5">Email</label>
-                    <input type="text" placeholder="your@email.com" value={_fpEmail} onChange={e=>{_setFpEmail(e.target.value);setFpErr('');}} onKeyDown={e=>e.key==='Enter'&&doFpEmail()} className={di}/>
-                  </div>
-                  {fpErr&&<p className="text-xs text-red-400 font-medium bg-red-500/10 rounded-xl px-3 py-2.5 border border-red-500/20">{fpErr}</p>}
-                  <Btn full onClick={doFpEmail} size="lg">Continue →</Btn>
-                  <p className="text-center text-sm"><span className="text-orange-400 cursor-pointer font-semibold hover:text-orange-300" onClick={()=>goTab('login')}>← Back to Sign In</span></p>
-                </div>
-              )}
-
-              {/* FORGOT — QUESTION */}
-              {tab==='forgot-question' && (
-                <div className="space-y-5">
-                  <div className="text-center mb-4">
-                    <div className="w-16 h-16 grad-ice rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 glow-ice">🔐</div>
-                    <h2 className="text-xl font-black text-white" style={{fontFamily:'Cinzel,serif'}}>Security Question</h2>
-                    <p className="text-slate-500 text-sm mt-1">Verify your identity</p>
-                  </div>
-                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl px-4 py-3">
-                    <p className="text-sm font-semibold text-orange-300">{fpQ}</p>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1.5">Your Answer</label>
-                    <input type="text" placeholder="Type your answer…" value={fpAns} onChange={e=>{setFpAns(e.target.value);setFpErr('');}} onKeyDown={e=>e.key==='Enter'&&doFpAnswer()} className={di}/>
-                  </div>
-                  {fpErr&&<p className="text-xs text-red-400 font-medium bg-red-500/10 rounded-xl px-3 py-2.5 border border-red-500/20">{fpErr}</p>}
-                  <Btn full onClick={doFpAnswer} size="lg">Verify →</Btn>
-                  <p className="text-center text-sm"><span className="text-orange-400 cursor-pointer font-semibold hover:text-orange-300" onClick={()=>goTab('forgot-email')}>← Different email</span></p>
-                </div>
-              )}
-
-              {/* FORGOT — RESET */}
-              {tab==='forgot-reset' && (
-                <div className="space-y-5">
-                  <div className="text-center mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4" style={{boxShadow:'0 4px 20px rgba(16,185,129,.4)'}}>✅</div>
-                    <h2 className="text-xl font-black text-white" style={{fontFamily:'Cinzel,serif'}}>Set New Password</h2>
-                    <p className="text-slate-500 text-sm mt-1">Identity verified for <span className="text-orange-400 font-semibold">{_fpEmail}</span></p>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1.5">New Password</label>
-                    <input type="password" placeholder="Min 4 characters" value={fpNew} onChange={e=>{setFpNew(e.target.value);setFpErr('');}} className={di}/>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1.5">Confirm Password</label>
-                    <input type="password" placeholder="Repeat" value={fpConf} onChange={e=>{setFpConf(e.target.value);setFpErr('');}} onKeyDown={e=>e.key==='Enter'&&doFpReset()} className={di}/>
-                  </div>
-                  {fpErr&&<p className="text-xs text-red-400 font-medium bg-red-500/10 rounded-xl px-3 py-2.5 border border-red-500/20">{fpErr}</p>}
-                  <Btn full onClick={doFpReset} size="lg">Reset Password →</Btn>
-                  <p className="text-center text-sm"><span className="text-orange-400 cursor-pointer font-semibold hover:text-orange-300" onClick={()=>goTab('login')}>← Cancel</span></p>
-                </div>
-              )}
-
-            </div>
+            ))}
           </div>
-          <p className="text-center text-slate-600 text-xs mt-5">🔥 Fire And Ice Hookah Lounge — Staff Portal ❄</p>
         </div>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════
-// SIDEBAR
-// ═══════════════════════════════════════════
-const NAV = [
-  { id:'dashboard', label:'Dashboard', icon:'▣' },
-  { id:'shifts',    label:'My Shifts', icon:'⏱' },
-  { id:'payroll',   label:'Payroll',   icon:'💳' },
-  { id:'employees', label:'Team',      icon:'👥', adminOnly:true },
-];
-
-function Sidebar({ page, setPage }) {
-  const { user, logout } = useAuth();
-  const { employees }    = useData();
-  const pending = employees.filter(e=>e.status==='pending').length;
+function ShiftsPage() {
+  const { user } = useContext(AuthCtx);
+  const { shifts, delShift, employees, exportShifts } = useContext(DataCtx);
+  const [modal, setModal] = useState(false);
+  const isAdmin = user.role==='admin';
+  const list = isAdmin ? shifts : shifts.filter(s=>s.empId===user.id);
 
   return (
-    <aside className="w-64 shrink-0 flex flex-col min-h-screen" style={{background:'#060810',borderRight:'1px solid rgba(255,107,43,.12)'}}>
-      {/* Brand */}
-      <div className="px-5 py-5" style={{borderBottom:'1px solid rgba(255,255,255,.05)'}}>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-xl grad-both flex items-center justify-center text-lg glow-fire" style={{boxShadow:'0 4px 15px rgba(255,107,43,.35)'}}>🔥</div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full grad-ice flex items-center justify-center text-[9px] font-bold text-slate-900">❄</div>
-          </div>
-          <div>
-            <div className="text-white font-black text-xs tracking-[.15em] uppercase leading-tight" style={{fontFamily:'Cinzel,serif'}}>Fire & Ice</div>
-            <div className="text-slate-600 text-[9px] tracking-widest uppercase font-medium">Hookah Lounge</div>
-          </div>
+    <div className="p-8 space-y-6 fade-up">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-black font-[Cinzel]">Shift Log</h2>
+        <div className="flex gap-2">
+          <Btn variant="secondary" size="sm" onClick={()=>exportShifts(list)}>Download CSV</Btn>
+          <Btn size="sm" onClick={()=>setModal(true)}>+ Add Shift</Btn>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1 mt-2">
-        {NAV.filter(n=>!n.adminOnly||user?.role==='admin').map(n=>(
-          <button key={n.id} onClick={()=>setPage(n.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 ${page===n.id?'nav-active text-white':'text-slate-500 hover:text-slate-200 hover:bg-white/4'}`}>
-            <span className="text-base leading-none w-5 text-center">{n.icon}</span>
-            <span>{n.label}</span>
-            {n.id==='employees'&&pending>0&&(
-              <span className="ml-auto bg-orange-500 text-white text-[10px] font-black rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5" style={{boxShadow:'0 0 10px rgba(255,107,43,.5)'}}>{pending}</span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* User */}
-      <div className="p-3" style={{borderTop:'1px solid rgba(255,255,255,.05)'}}>
-        <div className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/4 transition-all group cursor-default">
-          <div className="w-9 h-9 rounded-xl grad-fire flex items-center justify-center text-white text-sm font-bold shrink-0" style={{boxShadow:'0 2px 10px rgba(255,107,43,.3)'}}>
-            {(user?.name||'?')[0].toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-white text-sm font-semibold truncate">{user?.name}</div>
-            <div className="text-slate-600 text-[10px] capitalize font-medium tracking-wide">{user?.role}</div>
-          </div>
-          <button onClick={logout} title="Sign out"
-            className="text-slate-700 hover:text-orange-400 text-lg transition-all opacity-0 group-hover:opacity-100">⏻</button>
-        </div>
+      <div className="glass rounded-3xl overflow-hidden border-white/5">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-white/5 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+            <tr>
+              <th className="p-5">Date</th>
+              {isAdmin && <th className="p-5">Staff</th>}
+              <th className="p-5">Time</th>
+              <th className="p-5">Duration</th>
+              <th className="p-5">Status</th>
+              <th className="p-5"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {list.slice().reverse().map(s => (
+              <tr key={s.id} className="hover:bg-white/5 transition-colors">
+                <td className="p-5 font-bold">{s.date}</td>
+                {isAdmin && <td className="p-5 text-slate-400">{employees.find(e=>e.id===s.empId)?.name}</td>}
+                <td className="p-5 font-mono text-slate-400">{s.startTime} - {s.endTime}</td>
+                <td className="p-5 font-black text-orange-500">{hrs(s.hours)}</td>
+                <td className="p-5">
+                   <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${s.locked?'bg-slate-800 text-slate-500':'bg-emerald-500/10 text-emerald-500'}`}>
+                    {s.locked ? '🔒 LOCKED' : '✓ ACTIVE'}
+                   </span>
+                </td>
+                <td className="p-5 text-right">
+                  {!s.locked && <button onClick={()=>delShift(s.id)} className="text-red-500 hover:text-red-400">Delete</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </aside>
+
+      {modal && <ShiftModal onClose={()=>setModal(false)} />}
+    </div>
   );
 }
 
-// ═══════════════════════════════════════════
-// TOP BAR
-// ═══════════════════════════════════════════
-function TopBar({ page, onAddShift }) {
-  const { user } = useAuth();
-  const { exportShifts, shifts } = useData();
-  const titles = { dashboard:'Dashboard', shifts:'Shift Management', payroll:'Payroll', employees:'Team Management' };
-  const subtitles = { dashboard:'Your overview for this pay period', shifts:'View and manage all your shifts', payroll:'Semi-monthly payroll & earnings', employees:'Manage your team' };
-  const cpp = curPP();
-  const myShifts = user.role==='admin' ? shifts : shifts.filter(s=>s.empId===user.empId);
+function PayrollPage() {
+  const { user } = useContext(AuthCtx);
+  const { payroll, genPayroll, markPaid, exportPayroll } = useContext(DataCtx);
+  const isAdmin = user.role === 'admin';
+  const pp = curPP();
+  const list = isAdmin ? payroll : payroll.filter(p=>p.empId===user.id);
 
   return (
-    <div className="shrink-0 px-8 py-4 flex items-center justify-between" style={{background:'rgba(8,11,20,.9)',borderBottom:'1px solid rgba(255,255,255,.06)',backdropFilter:'blur(20px)'}}>
-      <div>
-        <h1 className="text-lg font-black text-white tracking-tight" style={{fontFamily:'Cinzel,serif'}}>{titles[page]||'Dashboard'}</h1>
-        <p className="text-xs text-slate-600 font-medium mt-0.5">{subtitles[page]||''} · <span className="text-orange-500/70">{fmtPP(cpp)}</span></p>
+    <div className="p-8 space-y-6 fade-up">
+       <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-black font-[Cinzel]">Payroll</h2>
+        <div className="flex gap-2">
+          {isAdmin && <Btn variant="secondary" size="sm" onClick={()=>genPayroll(pp)}>Generate Current</Btn>}
+          <Btn size="sm" onClick={()=>exportPayroll(list)}>Export for Excel</Btn>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        {page==='shifts'&&(
-          <Btn variant="export" size="sm" onClick={()=>exportShifts(myShifts)}>↓ Export CSV</Btn>
-        )}
-        <Btn size="sm" onClick={onAddShift}>
-          <span className="text-base leading-none">+</span> Add Shift
-        </Btn>
+
+      <div className="glass rounded-3xl overflow-hidden border-white/5">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-white/5 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+            <tr>
+              <th className="p-5">Period</th>
+              {isAdmin && <th className="p-5">Staff</th>}
+              <th className="p-5">Total Hrs</th>
+              <th className="p-5">Gross Pay</th>
+              <th className="p-5">Status</th>
+              {isAdmin && <th className="p-5"></th>}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {list.slice().reverse().map(p => (
+              <tr key={p.id}>
+                <td className="p-5 font-bold">{fmtPP(p.payPeriod)}</td>
+                {isAdmin && <td className="p-5">{p.empName}</td>}
+                <td className="p-5 font-black">{hrs(p.totalHours)}</td>
+                <td className="p-5 font-black text-emerald-500">{money(p.totalPay)}</td>
+                <td className="p-5">
+                   <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${p.status==='paid'?'bg-emerald-500 text-white':'bg-orange-500/20 text-orange-500'}`}>
+                    {p.status.toUpperCase()}
+                   </span>
+                </td>
+                {isAdmin && (
+                  <td className="p-5 text-right">
+                    {p.status !== 'paid' && <Btn size="sm" variant="success" onClick={()=>markPaid(p.id)}>Mark Paid</Btn>}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════
-// SHIFT MODAL
-// ═══════════════════════════════════════════
-function ShiftModal({ open, onClose, editShift=null, preEmpId=null }) {
-  const { user } = useAuth();
-  const { employees, addShift, editShift:doEdit } = useData();
-  const isAdmin  = user.role === 'admin';
-  const approved = employees.filter(e=>e.status==='approved');
-  const blank = { empId:preEmpId||(isAdmin?'':user.empId), date:new Date().toISOString().split('T')[0], startTime:'', endTime:'', notes:'' };
-  const [form, setForm] = useState(blank);
-  const [errs, setErrs] = useState({});
+// ──────────── AUTH & SHELL ────────────
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('dh4_user')));
+  const login = (e, p) => {
+    if(e === 'admin' && p === 'admin123') {
+      const u = ADMIN;
+      localStorage.setItem('dh4_user', JSON.stringify(u));
+      setUser(u);
+      return true;
+    }
+    const emps = store.get('dh4_users');
+    const u = emps.find(x => x.email === e && x.password === p);
+    if(u && u.status === 'approved') {
+      localStorage.setItem('dh4_user', JSON.stringify(u));
+      setUser(u);
+      return true;
+    }
+    return false;
+  };
+  const logout = () => { localStorage.removeItem('dh4_user'); setUser(null); };
+  return <AuthCtx.Provider value={{ user, login, logout, setUser }}>{children}</AuthCtx.Provider>;
+}
 
-  useEffect(()=>{
-    setErrs({});
-    if(editShift) setForm({ empId:editShift.empId, date:editShift.date, startTime:editShift.startTime, endTime:editShift.endTime, notes:editShift.notes||'' });
-    else setForm({ ...blank, empId:preEmpId||(isAdmin?(approved[0]?.id||''):user.empId) });
-  }, [open, editShift?.id]);
+function ShiftModal({onClose}) {
+  const { user } = useContext(AuthCtx);
+  const { employees, addShift } = useContext(DataCtx);
+  const [form, setForm] = useState({ 
+    empId: user.role==='admin' ? '' : user.id,
+    date: new Date().toISOString().split('T')[0],
+    startTime: '18:00',
+    endTime: '23:00'
+  });
 
-  const set = (k,v) => { setForm(f=>({...f,[k]:v})); setErrs(e=>({...e,[k]:''})); };
-  const submit = () => {
-    const e={};
-    if(isAdmin&&!form.empId) e.empId='Select an employee';
-    if(!form.date)      e.date='Required';
-    if(!form.startTime) e.startTime='Required';
-    if(!form.endTime)   e.endTime='Required';
-    setErrs(e); if(Object.keys(e).length) return;
-    editShift ? doEdit(editShift.id, form) : addShift(form);
+  const submit = (e) => {
+    e.preventDefault();
+    if(!form.empId) return alert('Select staff');
+    addShift(form);
     onClose();
   };
-  const preview = form.startTime && form.endTime ? calcHours(form.startTime, form.endTime) : null;
 
   return (
-    <Modal open={open} onClose={onClose} title={editShift?'Edit Shift':'New Shift'} subtitle="Fill in the shift details"
-      footer={<><Btn variant="secondary" onClick={onClose}>Cancel</Btn><Btn onClick={submit}>{editShift?'Save Changes':'Add Shift'}</Btn></>}>
-      <div className="space-y-5">
-        {isAdmin&&<GSelect label="Employee" value={form.empId} onChange={e=>set('empId',e.target.value)}>
-          <option value="">Select employee…</option>
-          {approved.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-        </GSelect>}
-        <Field label="Date" type="date" value={form.date} onChange={e=>set('date',e.target.value)} error={errs.date}/>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Start Time" type="time" value={form.startTime} onChange={e=>set('startTime',e.target.value)} error={errs.startTime}/>
-          <Field label="End Time"   type="time" value={form.endTime}   onChange={e=>set('endTime',e.target.value)}   error={errs.endTime}/>
-        </div>
-        {preview!==null&&(
-          <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/20 rounded-2xl px-5 py-3.5">
-            <span className="text-2xl">⏱</span>
-            <div>
-              <div className="text-sm font-bold text-orange-300">{hrs(preview)} duration</div>
-              <div className="text-xs text-slate-500">{form.startTime} — {form.endTime}</div>
-            </div>
-          </div>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <form onSubmit={submit} className="glass w-full max-w-md rounded-3xl p-8 border-orange-500/20 space-y-4">
+        <h2 className="text-xl font-black">Add New Shift</h2>
+        {user.role === 'admin' && (
+          <select className="w-full bg-white/5 border border-white/10 rounded-xl p-3" value={form.empId} onChange={e=>setForm({...form, empId: e.target.value})}>
+            <option value="">Select Staff...</option>
+            {employees.filter(e=>e.status==='approved').map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
         )}
-        <Field label="Notes (optional)" textarea rows={3} value={form.notes} onChange={e=>set('notes',e.target.value)} placeholder="e.g. closing shift, training, cover…"/>
-      </div>
-    </Modal>
+        <input type="date" className="w-full bg-white/5 border border-white/10 rounded-xl p-3" value={form.date} onChange={e=>setForm({...form, date: e.target.value})}/>
+        <div className="grid grid-cols-2 gap-4">
+          <input type="time" className="w-full bg-white/5 border border-white/10 rounded-xl p-3" value={form.startTime} onChange={e=>setForm({...form, startTime: e.target.value})}/>
+          <input type="time" className="w-full bg-white/5 border border-white/10 rounded-xl p-3" value={form.endTime} onChange={e=>setForm({...form, endTime: e.target.value})}/>
+        </div>
+        <div className="flex gap-3 pt-4">
+          <Btn variant="secondary" full onClick={onClose}>Cancel</Btn>
+          <Btn type="submit" full>Save Shift</Btn>
+        </div>
+      </form>
+    </div>
   );
 }
 
-// ═══════════════════════════════════════════
-// DASHBOARD
-// ═══════════════════════════════════════════
-function DashboardPage({ setPage, onAddShift }) {
-  const { user } = useAuth();
-  const { employees, shifts, payroll } = useData();
-  const isAdmin  = user.role === 'admin';
-  const cpp      = curPP();
-  const payday   = nextPayday();
-  const approved = employees.filter(e=>e.status==='approved');
-  const pending  = employees.filter(e=>e.status==='pending');
-  const myShifts = isAdmin ? shifts : shifts.filter(s=>s.empId===user.empId);
-  const curShifts= myShifts.filter(s=>s.payPeriod===cpp);
-  const allCurSh = shifts.filter(s=>s.payPeriod===cpp);
-
-  const totHrs = curShifts.reduce((a,s)=>a+(s.hours||0),0);
-  const totPay = isAdmin
-    ? payroll.filter(p=>p.payPeriod===cpp).reduce((a,p)=>a+(p.totalPay||0),0)
-    : (payroll.find(p=>p.empId===user.empId&&p.payPeriod===cpp)?.totalPay||0);
-
-  const recent = [...myShifts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
-  const chartData = isAdmin ? approved.map((e,i)=>({ name:e.name.split(' ')[0], color:empClr(i), hrs:allCurSh.filter(s=>s.empId===e.id).reduce((a,s)=>a+(s.hours||0),0) })) : null;
-  const maxHrs = chartData ? Math.max(...chartData.map(d=>d.hrs),1) : 1;
-
-  // Drag-drop layout
-  const DEFAULT = [
-    {id:'hours',span:1},{id:'pay',span:1},{id:'team',span:1},{id:'payday',span:1},
-    {id:'chart',span:2},{id:'recent',span:2}
-  ];
-  const [layout, setLayout] = useState(()=>store.get('dh4_layout',DEFAULT)||DEFAULT);
-  const [dragging,setDragging]=useState(null);
-  const [dragOver,setDragOver]=useState(null);
-
-  const onDS=(e,id)=>{setDragging(id);e.dataTransfer.effectAllowed='move';};
-  const onDO=(e,id)=>{e.preventDefault();setDragOver(id);};
-  const onDE=()=>{setDragging(null);setDragOver(null);};
-  const onDrop=(e,id)=>{
-    e.preventDefault();
-    if(!dragging||dragging===id){onDE();return;}
-    const next=[...layout];
-    const fi=next.findIndex(w=>w.id===dragging),ti=next.findIndex(w=>w.id===id);
-    const[m]=next.splice(fi,1);next.splice(ti,0,m);
-    setLayout(next);store.set('dh4_layout',next);onDE();
-  };
-
-  const widgetContent = {
-    hours: <StatCard icon="⏱" label={isAdmin?'Team Hours This Period':'My Hours This Period'} value={hrs(totHrs)} sub={isAdmin?`${approved.length} active employees`:`${myShifts.length} total shifts`} type="fire"/>,
-    pay:   <StatCard icon="💵" label={isAdmin?'Total Payroll This Period':'My Pay This Period'} value={money(totPay)} sub={isAdmin?'All employees combined':'Pending or paid'} type="ice"/>,
-    team:  isAdmin
-      ? <StatCard icon="👥" label="Active Employees" value={approved.length} sub={pending.length>0?`${pending.length} pending approval`:'All accounts active'} type="purple"/>
-      : <StatCard icon="📋" label="My Shifts" value={myShifts.length} sub={`${curShifts.length} this period`} type="purple"/>,
-    payday: (
-      <div className="stat-fire-bg rounded-2xl p-5 h-full">
-        <div className="w-11 h-11 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-xl mb-4" style={{boxShadow:'0 4px 15px rgba(245,158,11,.4)'}}>📅</div>
-        <div className="text-2xl font-black text-white">{payday.days} days</div>
-        <div className="text-sm text-slate-400 mt-1">Next Payday</div>
-        <div className="text-xs text-slate-500 mt-0.5">{payday.label}</div>
-        <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,.08)'}}>
-          <div className="h-full grad-fire rounded-full" style={{width:`${Math.min(100,Math.max(4,100-payday.days/15*100))}%`,transition:'width .5s ease'}}/>
-        </div>
-      </div>
-    ),
-    chart: (
-      <div className="glass rounded-2xl p-6 h-full" style={{border:'1px solid rgba(255,255,255,.07)'}}>
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <div className="text-sm font-bold text-white">Hours by Employee</div>
-            <div className="text-xs text-slate-500 mt-0.5">{fmtPP(cpp)}</div>
-          </div>
-          {isAdmin&&<Btn size="sm" variant="ghost" onClick={()=>setPage('payroll')}>View Payroll →</Btn>}
-        </div>
-        {isAdmin&&chartData?.length>0 ? (
-          <div className="flex items-end gap-2" style={{height:140}}>
-            {chartData.map((d,i)=>{
-              const bh=Math.max(4,(d.hrs/maxHrs)*120);
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                  <span className="text-[10px] font-bold" style={{color:d.color}}>{d.hrs>0?hrs(d.hrs):''}</span>
-                  <div className="w-full rounded-t-lg transition-all duration-500 cursor-default" style={{height:bh,background:`linear-gradient(180deg,${d.color},${d.color}88)`,boxShadow:`0 -4px 12px ${d.color}40`}}/>
-                  <span className="text-[10px] text-slate-500 truncate max-w-full text-center">{d.name}</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : <div className="flex items-center justify-center h-32 text-sm text-slate-600">No shift data for this period</div>}
-      </div>
-    ),
-    recent: (
-      <div className="glass rounded-2xl p-6 h-full" style={{border:'1px solid rgba(255,255,255,.07)'}}>
-        <div className="flex items-center justify-between mb-5">
-          <div className="text-sm font-bold text-white">Recent Shifts</div>
-          <Btn size="sm" onClick={onAddShift}>+ Add</Btn>
-        </div>
-        {recent.length===0
-          ? <div className="flex flex-col items-center justify-center py-10 text-slate-600 gap-2"><span className="text-4xl">⏱</span><p className="text-sm">No shifts yet</p></div>
-          : <div className="space-y-0">
-            {recent.map(s=>{
-              const emp=employees.find(e=>e.id===s.empId);
-              const dt=new Date(s.date+'T00:00:00');
-              return (
-                <div key={s.id} className="flex items-center gap-3 py-3" style={{borderBottom:'1px solid rgba(255,255,255,.04)'}}>
-                  <div className="text-center w-9 shrink-0">
-                    <div className="text-[9px] font-black text-slate-600 uppercase leading-none">{MONTHS_SHORT[dt.getMonth()]}</div>
-                    <div className="text-lg font-black text-white leading-tight">{dt.getDate()}</div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {isAdmin&&emp&&<div className="text-xs font-bold mb-0.5" style={{color:empClr(employees.indexOf(emp))}}>{emp.name}</div>}
-                    <div className="text-sm text-slate-300 font-mono">{s.startTime} → {s.endTime}</div>
-                    {s.notes&&<div className="text-xs text-slate-600 italic truncate">{s.notes}</div>}
-                  </div>
-                  <Chip color="fire">{hrs(s.hours)}</Chip>
-                </div>
-              );
-            })}
-          </div>}
-      </div>
-    ),
+function TeamPage() {
+  const { employees, sync } = useContext(DataCtx);
+  const approve = (id) => {
+    const next = store.get('dh4_users').map(u => u.id===id ? {...u, status:'approved'}:u);
+    sync(next, null, null);
   };
 
   return (
     <div className="p-8 space-y-6 fade-up">
-      {pending.length>0&&isAdmin&&(
-        <div className="flex items-center gap-3 rounded-2xl px-5 py-4" style={{background:'rgba(255,107,43,.08)',border:'1px solid rgba(255,107,43,.2)'}}>
-          <span className="text-xl">⚠</span>
-          <div className="flex-1">
-            <span className="text-sm font-bold text-orange-400">{pending.length} account{pending.length!==1?'s':''} awaiting approval</span>
-            <span className="text-xs text-slate-500 ml-2">— check the Team page</span>
-          </div>
-          <Btn size="sm" onClick={()=>setPage('employees')}>Review →</Btn>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-600 flex items-center gap-1.5">
-          <span>⠿</span> Drag widgets to rearrange
-          <button onClick={()=>{setLayout(DEFAULT);store.del('dh4_layout');}} className="ml-2 text-orange-500/60 hover:text-orange-400 transition-colors">Reset</button>
-        </p>
-        <Btn size="sm" onClick={onAddShift}>+ Add Shift</Btn>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {layout.map(w=>(
-          <div key={w.id}
-            draggable onDragStart={e=>onDS(e,w.id)} onDragOver={e=>onDO(e,w.id)} onDrop={e=>onDrop(e,w.id)} onDragEnd={onDE}
-            className={`rounded-2xl transition-all duration-200 cursor-grab active:cursor-grabbing ${w.span===2?'lg:col-span-2':''} ${dragging===w.id?'dragging-widget':''} ${dragOver===w.id&&dragging!==w.id?'drop-target':''}`}>
-            {widgetContent[w.id]}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════
-// SHIFTS PAGE
-// ═══════════════════════════════════════════
-function ShiftsPage() {
-  const { user }  = useAuth();
-  const { employees, shifts, delShift } = useData();
-  const [addOpen, setAddOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [ppF,setPpF] = useState('all');
-  const [empF,setEmpF]= useState('all');
-  const isAdmin = user.role === 'admin';
-  const my = isAdmin ? shifts : shifts.filter(s=>s.empId===user.empId);
-  const allPPs = useMemo(()=>[...new Set(my.map(s=>s.payPeriod).filter(Boolean))].sort().reverse(),[my]);
-  const approved = employees.filter(e=>e.status==='approved');
-  const rows = my.filter(s=>(ppF==='all'||s.payPeriod===ppF)&&(empF==='all'||s.empId===empF)).sort((a,b)=>b.date.localeCompare(a.date));
-
-  return (
-    <div className="p-8 space-y-6 fade-up">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <select value={ppF} onChange={e=>setPpF(e.target.value)}
-          className="glass rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none inp-focus [&>option]:bg-[#0d1120]">
-          <option value="all">All Pay Periods</option>
-          {allPPs.map(pp=><option key={pp} value={pp}>{pp===curPP()?'▶ ':''}{fmtPP(pp)}</option>)}
-        </select>
-        {isAdmin&&<select value={empF} onChange={e=>setEmpF(e.target.value)}
-          className="glass rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none inp-focus [&>option]:bg-[#0d1120]">
-          <option value="all">All Employees</option>
-          {approved.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-        </select>}
-        <span className="text-xs text-slate-600 self-center ml-1">{rows.length} shift{rows.length!==1?'s':''}</span>
-      </div>
-
-      {/* Table */}
-      <div className="glass rounded-2xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,.07)'}}>
-        {rows.length===0
-          ? <div className="flex flex-col items-center justify-center py-24 text-slate-600 gap-3">
-              <span className="text-6xl">⏱</span>
-              <p className="text-base font-semibold">No shifts found</p>
-              <Btn onClick={()=>setAddOpen(true)}>Add First Shift</Btn>
-            </div>
-          : <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr style={{background:'rgba(255,255,255,.03)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                  {['Date',isAdmin&&'Employee','Time','Hours','Pay Period','Notes',''].filter(Boolean).map(h=>(
-                    <th key={h} className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-600">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((s,i)=>{
-                  const emp=employees.find(e=>e.id===s.empId);
-                  const dt=new Date(s.date+'T00:00:00');
-                  return (
-                    <tr key={s.id} className="tr-hover" style={{borderBottom:'1px solid rgba(255,255,255,.04)'}}>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-white">{dt.getDate()} {MONTHS_SHORT[dt.getMonth()]} {dt.getFullYear()}</div>
-                      </td>
-                      {isAdmin&&<td className="px-6 py-4">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar name={emp?.name||'?'} size="sm" color={empClr(employees.indexOf(emp))}/>
-                          <span className="text-sm font-semibold text-slate-300">{emp?.name||'—'}</span>
-                        </div>
-                      </td>}
-                      <td className="px-6 py-4 font-mono text-sm text-slate-300">{s.startTime} → {s.endTime}</td>
-                      <td className="px-6 py-4"><Chip color="fire">{hrs(s.hours)}</Chip></td>
-                      <td className="px-6 py-4 text-xs text-slate-600">{fmtPP(s.payPeriod)}</td>
-                      <td className="px-6 py-4 text-xs text-slate-600 italic max-w-[160px] truncate">{s.notes||'—'}</td>
-                      <td className="px-6 py-4">
-                        {s.locked ? <Chip color="slate">🔒 Locked</Chip>
-                          : <div className="flex gap-2">
-                              <Btn size="xs" variant="secondary" onClick={()=>{setEditing(s);setAddOpen(true);}}>Edit</Btn>
-                              <Btn size="xs" variant="danger" onClick={()=>delShift(s.id)}>Del</Btn>
-                            </div>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>}
-      </div>
-      <ShiftModal open={addOpen} onClose={()=>{setAddOpen(false);setEditing(null);}} editShift={editing}/>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════
-// PAYROLL PAGE
-// ═══════════════════════════════════════════
-function PayrollPage() {
-  const { user } = useAuth();
-  const { employees, shifts, payroll, genPayroll, markPaid, exportPayroll } = useData();
-  const isAdmin = user.role === 'admin';
-  const cpp     = curPP();
-  const [selPP, setSelPP] = useState(cpp);
-
-  const allPPs = useMemo(()=>{
-    const s=new Set([cpp,...shifts.map(s=>s.payPeriod)]);
-    return [...s].filter(Boolean).sort().reverse();
-  },[shifts]);
-
-  const periodRows = payroll.filter(p=>p.payPeriod===selPP);
-  const myRows = isAdmin ? periodRows : periodRows.filter(p=>p.empId===user.empId);
-  const totHrs = myRows.reduce((a,p)=>a+(p.totalHours||0),0);
-  const totPay = myRows.reduce((a,p)=>a+(p.totalPay||0),0);
-  const totOT  = myRows.reduce((a,p)=>a+(p.overtimeHours||0),0);
-
-  return (
-    <div className="p-8 space-y-6 fade-up">
-      {/* Controls */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <select value={selPP} onChange={e=>setSelPP(e.target.value)}
-          className="glass rounded-xl px-4 py-2.5 text-sm text-slate-300 outline-none inp-focus [&>option]:bg-[#0d1120]">
-          {allPPs.map(pp=><option key={pp} value={pp}>{pp===cpp?'▶ ':''}{fmtPP(pp)}</option>)}
-        </select>
-        {isAdmin&&<Btn variant="secondary" size="sm" onClick={()=>genPayroll(selPP)}>⚙ Generate</Btn>}
-        <Btn variant="export" size="sm" onClick={()=>exportPayroll(myRows)}>↓ Export CSV</Btn>
-        {selPP===cpp&&<Chip color="fire">Current Period</Chip>}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="⏱" label="Total Hours"  value={hrs(totHrs)} type="fire"/>
-        <StatCard icon="💵" label="Total Pay"    value={money(totPay)} type="ice"/>
-        <StatCard icon="⚡" label="Overtime Hrs" value={hrs(totOT)} sub={totOT>0?'1.5× rate applied':'No overtime'} type="purple"/>
-        {isAdmin
-          ? <StatCard icon="✅" label="Paid" value={`${myRows.filter(p=>p.status==='paid').length}/${myRows.length}`} type="green"/>
-          : <StatCard icon="📋" label="Status" value={myRows[0]?.status==='paid'?'Paid':'Pending'} type="green"/>}
-      </div>
-
-      {/* Table */}
-      <div className="glass rounded-2xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,.07)'}}>
-        <div className="px-6 py-4 flex items-center justify-between" style={{borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-          <div className="text-sm font-bold text-white">{fmtPP(selPP)}</div>
-          {myRows.length>0&&<div className="text-xs text-slate-600">{myRows.length} employee{myRows.length!==1?'s':''}</div>}
-        </div>
-        {myRows.length===0
-          ? <div className="flex flex-col items-center justify-center py-24 text-slate-600 gap-3">
-              <span className="text-6xl">💳</span>
-              <p className="text-base font-semibold">No payroll for this period</p>
-              {isAdmin&&<Btn onClick={()=>genPayroll(selPP)}>Generate Payroll</Btn>}
-            </div>
-          : <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr style={{background:'rgba(255,255,255,.03)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                  {[isAdmin&&'Employee','Reg Hrs','OT Hrs','Total Hrs','Rate','Total Pay','Status',isAdmin&&'Action'].filter(Boolean).map(h=>(
-                    <th key={h} className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-600">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {myRows.map(p=>(
-                  <tr key={p.id} className="tr-hover" style={{borderBottom:'1px solid rgba(255,255,255,.04)'}}>
-                    {isAdmin&&<td className="px-6 py-4">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={p.empName} size="sm" color={empClr(employees.findIndex(e=>e.id===p.empId))}/>
-                        <span className="text-sm font-bold text-white">{p.empName}</span>
-                      </div>
-                    </td>}
-                    <td className="px-6 py-4 text-sm text-slate-400">{hrs(p.regularHours)}</td>
-                    <td className="px-6 py-4">
-                      {p.overtimeHours>0
-                        ? <span className="text-sm font-bold text-amber-400">{hrs(p.overtimeHours)}</span>
-                        : <span className="text-slate-700">—</span>}
-                    </td>
-                    <td className="px-6 py-4"><Chip color="fire">{hrs(p.totalHours)}</Chip></td>
-                    <td className="px-6 py-4 text-sm text-slate-500">${p.hourlyRate}/hr</td>
-                    <td className="px-6 py-4 text-sm font-black text-white">{money(p.totalPay)}</td>
-                    <td className="px-6 py-4">
-                      <Chip color={p.status==='paid'?'green':'amber'}>{p.status==='paid'?'✓ Paid':'Pending'}</Chip>
-                    </td>
-                    {isAdmin&&<td className="px-6 py-4">
-                      {p.status!=='paid'&&<Btn size="xs" variant="success" onClick={()=>markPaid(p.id)}>Mark Paid</Btn>}
-                    </td>}
-                  </tr>
-                ))}
-              </tbody>
-              {myRows.length>1&&(
-                <tfoot>
-                  <tr style={{background:'rgba(255,107,43,.05)',borderTop:'1px solid rgba(255,107,43,.15)'}}>
-                    {isAdmin&&<td className="px-6 py-3 text-xs font-black text-slate-500 uppercase tracking-wider">Totals</td>}
-                    <td className="px-6 py-3 text-sm font-black text-white">{hrs(myRows.reduce((a,p)=>a+(p.regularHours||0),0))}</td>
-                    <td className="px-6 py-3 text-sm font-black text-amber-400">{hrs(totOT)}</td>
-                    <td className="px-6 py-3 text-sm font-black text-white">{hrs(totHrs)}</td>
-                    <td className="px-6 py-3">—</td>
-                    <td className="px-6 py-3 text-sm font-black text-orange-400">{money(totPay)}</td>
-                    <td colSpan={isAdmin?2:1}/>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>}
+      <h2 className="text-2xl font-black font-[Cinzel]">Team Management</h2>
+      <div className="glass rounded-3xl overflow-hidden border-white/5">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-white/5 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+            <tr>
+              <th className="p-5">Name</th>
+              <th className="p-5">Role</th>
+              <th className="p-5">Rate</th>
+              <th className="p-5">Status</th>
+              <th className="p-5"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {employees.map(e => (
+              <tr key={e.id}>
+                <td className="p-5 font-bold">{e.name}</td>
+                <td className="p-5 text-slate-400">{e.jobTitle}</td>
+                <td className="p-5 font-black text-orange-500">${e.hourlyRate}/hr</td>
+                <td className="p-5">
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${e.status==='approved'?'bg-emerald-500/10 text-emerald-500':'bg-amber-500/10 text-amber-500'}`}>
+                    {e.status.toUpperCase()}
+                  </span>
+                </td>
+                <td className="p-5 text-right">
+                  {e.status === 'pending' && <Btn size="sm" onClick={()=>approve(e.id)}>Approve</Btn>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
-}
-
-// ═══════════════════════════════════════════
-// EMPLOYEES PAGE
-// ═══════════════════════════════════════════
-function EmployeesPage() {
-  const { employees, shifts, approveEmp, rejectEmp, removeEmp, updateEmp, exportShifts } = useData();
-  const [tab,  setTab]  = useState('approved');
-  const [edit, setEdit] = useState(null);
-  const [ef,   setEF]   = useState({});
-  const groups = {
-    approved: employees.filter(e=>e.status==='approved'),
-    pending:  employees.filter(e=>e.status==='pending'),
-    rejected: employees.filter(e=>e.status==='rejected'),
-  };
-  const list = groups[tab];
-  const openEdit=(e)=>{setEdit(e);setEF({name:e.name,hourlyRate:e.hourlyRate,jobTitle:e.jobTitle||''});};
-  const saveEdit=()=>{ updateEmp(edit.id,{name:ef.name.trim(),hourlyRate:parseFloat(ef.hourlyRate)||0,jobTitle:ef.jobTitle.trim()}); setEdit(null); };
-
-  return (
-    <div className="p-8 space-y-6 fade-up">
-      <div className="text-xs text-slate-600">{groups.approved.length} active · {groups.pending.length} pending · {groups.rejected.length} rejected</div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl p-1.5 w-fit" style={{background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)'}}>
-        {[['approved','Active'],['pending','Pending'],['rejected','Rejected']].map(([k,l])=>(
-          <button key={k} onClick={()=>setTab(k)}
-            className={`pill-tab px-5 py-2 rounded-xl text-sm font-bold transition-all border border-transparent ${tab===k?'on text-white':'text-slate-500 hover:text-slate-300'}`}>
-            {l}
-            {k==='pending'&&groups.pending.length>0&&<span className="ml-2 bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full" style={{boxShadow:'0 0 8px rgba(255,107,43,.5)'}}>{groups.pending.length}</span>}
-          </button>
-        ))}
-      </div>
-
-      <div className="glass rounded-2xl overflow-hidden" style={{border:'1px solid rgba(255,255,255,.07)'}}>
-        {list.length===0
-          ? <div className="flex flex-col items-center justify-center py-24 text-slate-600 gap-3"><span className="text-6xl">👥</span><p className="text-base font-semibold">No {tab} employees</p></div>
-          : <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr style={{background:'rgba(255,255,255,.03)',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
-                  {['Employee','Email','Job Title','Hourly Rate','Total Hours','Joined','Actions'].map(h=>(
-                    <th key={h} className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-slate-600">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((emp,i)=>{
-                  const empShifts=shifts.filter(s=>s.empId===emp.id);
-                  const totH=empShifts.reduce((a,s)=>a+(s.hours||0),0);
-                  const joined=new Date(emp.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-                  return (
-                    <tr key={emp.id} className="tr-hover" style={{borderBottom:'1px solid rgba(255,255,255,.04)'}}>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={emp.name} size="md" color={empClr(i)}/>
-                          <span className="text-sm font-bold text-white">{emp.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">{emp.email}</td>
-                      <td className="px-6 py-4 text-sm text-slate-400 font-medium">{emp.jobTitle||'—'}</td>
-                      <td className="px-6 py-4"><span className="text-sm font-black text-orange-400">${emp.hourlyRate}</span><span className="text-xs text-slate-600">/hr</span></td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Chip color="fire">{hrs(totH)}</Chip>
-                          <span className="text-xs text-slate-600">{empShifts.length} shifts</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-slate-600 font-medium">{joined}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {tab==='pending'&&<>
-                            <Btn size="xs" variant="success" onClick={()=>approveEmp(emp.id)}>✓ Approve</Btn>
-                            <Btn size="xs" variant="danger"  onClick={()=>rejectEmp(emp.id)}>Reject</Btn>
-                          </>}
-                          {tab==='approved'&&<>
-                            <Btn size="xs" variant="secondary" onClick={()=>openEdit(emp)}>Edit</Btn>
-                            <Btn size="xs" variant="export" onClick={()=>exportShifts(shifts.filter(s=>s.empId===emp.id))}>↓ CSV</Btn>
-                            <Btn size="xs" variant="danger" onClick={()=>{if(confirm(`Remove ${emp.name} and all their data?`))removeEmp(emp.id);}}>Remove</Btn>
-                          </>}
-                          {tab==='rejected'&&<>
-                            <Btn size="xs" variant="success" onClick={()=>approveEmp(emp.id)}>Approve</Btn>
-                            <Btn size="xs" variant="danger"  onClick={()=>{if(confirm(`Remove ${emp.name}?`))removeEmp(emp.id);}}>Remove</Btn>
-                          </>}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>}
-      </div>
-
-      <Modal open={!!edit} onClose={()=>setEdit(null)} title="Edit Employee" subtitle="Update details and pay rate"
-        footer={<><Btn variant="secondary" onClick={()=>setEdit(null)}>Cancel</Btn><Btn onClick={saveEdit}>Save Changes</Btn></>}>
-        <div className="space-y-5">
-          <Field label="Full Name"      value={ef.name||''} onChange={e=>setEF(f=>({...f,name:e.target.value}))}/>
-          <Field label="Job Title"      value={ef.jobTitle||''} onChange={e=>setEF(f=>({...f,jobTitle:e.target.value}))} placeholder="e.g. Barista, Manager…"/>
-          <Field label="Hourly Rate ($)" type="number" min="0" step="0.5" value={ef.hourlyRate||''} onChange={e=>setEF(f=>({...f,hourlyRate:e.target.value}))} hint="Overtime applies after 80h/period at 1.5×"/>
-        </div>
-      </Modal>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════
-// APP SHELL
-// ═══════════════════════════════════════════
-function AppShell() {
-  const { user } = useAuth();
-  const [page, setPage]       = useState('dashboard');
-  const [shiftOpen, setShift] = useState(false);
-  if (!user) return <LoginPage/>;
-  const isAdmin = user.role === 'admin';
-  const pages = {
-    dashboard: <DashboardPage setPage={setPage} onAddShift={()=>setShift(true)}/>,
-    shifts:    <ShiftsPage/>,
-    payroll:   <PayrollPage/>,
-    employees: isAdmin ? <EmployeesPage/> : <DashboardPage setPage={setPage} onAddShift={()=>setShift(true)}/>,
-  };
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar page={page} setPage={setPage}/>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar page={page} onAddShift={()=>setShift(true)}/>
-        <div className="flex-1 overflow-y-auto bg-mesh">{pages[page]||pages.dashboard}</div>
-      </div>
-      <ShiftModal open={shiftOpen} onClose={()=>setShift(false)}/>
-    </div>
-  );
-}
-
-function DataLayer() {
-  const { user } = useAuth();
-  if (!user) return <LoginPage/>;
-  return <DataProvider><AppShell/></DataProvider>;
 }
 
 function App() {
+  const { user, login, logout } = useContext(AuthCtx);
+  const [page, setPage] = useState('dashboard');
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+
+  if(!user) return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="glass w-full max-w-md rounded-[40px] p-10 border-orange-500/20 text-center space-y-8">
+        <div>
+          <div className="w-20 h-20 grad-both rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4 glow-fire">🔥</div>
+          <h1 className="text-3xl font-black font-[Cinzel]">Fire & Ice</h1>
+          <p className="text-slate-500 text-sm">Staff Management Portal</p>
+        </div>
+        <div className="space-y-4">
+          <input type="text" placeholder="Email / Username" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-orange-500/50" value={email} onChange={e=>setEmail(e.target.value)}/>
+          <input type="password" placeholder="Password" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-orange-500/50" value={pass} onChange={e=>setPass(e.target.value)}/>
+          <Btn full size="lg" onClick={()=>login(email, pass)}>Sign In</Btn>
+        </div>
+        <p className="text-[10px] text-slate-700 uppercase tracking-widest">Admin: admin / admin123</p>
+      </div>
+    </div>
+  );
+
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <DataLayer/>
-      </AuthProvider>
-    </ToastProvider>
+    <div className="flex h-screen overflow-hidden">
+      <aside className="w-64 bg-[#060810] border-r border-white/5 flex flex-col p-6">
+        <div className="flex items-center gap-3 mb-10">
+          <div className="w-10 h-10 grad-both rounded-xl flex items-center justify-center text-xl glow-fire">🔥</div>
+          <span className="font-black font-[Cinzel] text-sm tracking-widest uppercase">Fire & Ice</span>
+        </div>
+        <nav className="flex-1 space-y-2">
+          <button onClick={()=>setPage('dashboard')} className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${page==='dashboard'?'bg-orange-500/10 text-orange-500':'text-slate-500 hover:text-white'}`}>Dashboard</button>
+          <button onClick={()=>setPage('shifts')} className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${page==='shifts'?'bg-orange-500/10 text-orange-500':'text-slate-500 hover:text-white'}`}>Shifts</button>
+          <button onClick={()=>setPage('payroll')} className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${page==='payroll'?'bg-orange-500/10 text-orange-500':'text-slate-500 hover:text-white'}`}>Payroll</button>
+          {user.role === 'admin' && <button onClick={()=>setPage('team')} className={`w-full text-left px-4 py-3 rounded-xl font-bold transition-all ${page==='team'?'bg-orange-500/10 text-orange-500':'text-slate-500 hover:text-white'}`}>Team</button>}
+        </nav>
+        <div className="pt-6 border-t border-white/5">
+          <div className="text-xs font-bold text-white mb-1">{user.name}</div>
+          <button onClick={logout} className="text-[10px] font-black text-slate-600 hover:text-red-500 uppercase tracking-widest transition-colors">Sign Out ⏻</button>
+        </div>
+      </aside>
+      <main className="flex-1 overflow-y-auto bg-mesh">
+        {page==='dashboard' && <Dashboard />}
+        {page==='shifts' && <ShiftsPage />}
+        {page==='payroll' && <PayrollPage />}
+        {page==='team' && <TeamPage />}
+      </main>
+    </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+const Root = () => (
+  <ToastProvider>
+    <AuthProvider>
+      <DataProvider>
+        <App />
+      </DataProvider>
+    </AuthProvider>
+  </ToastProvider>
+);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
 </script>
 </body>
 </html>
