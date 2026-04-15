@@ -3,338 +3,240 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fire And Ice Hookah Lounge — Staff Portal</title>
+<title>Fire & Ice — Staff Portal</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet"/>
 <style>
-*,*::before,*::after{box-sizing:border-box;}
-:root{
-  --fire:#ff6b2b;
-  --fire2:#ffab3c;
-  --ice:#00d4ff;
-  --ice2:#06c2c2;
-  --bg:#080b14;
-  --bg2:#0d1120;
-  --text:#f0f4ff;
+:root {
+  --primary: #ff6b2b;
+  --secondary: #00d4ff;
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --text: #0f172a;
+  --border: #e2e8f0;
 }
-html,body,#root{height:100%;min-height:100vh;}
-body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--text);}
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-thumb{background:rgba(255,107,43,.4);border-radius:99px;}
-
-.grad-both{background:linear-gradient(135deg,#ff6b2b,#ff8c42,#00d4ff);}
-.glass{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);backdrop-filter:blur(20px);}
-.fade-up{animation:fadeUp .3s cubic-bezier(.16,1,.3,1) both;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-.shimmer-btn{background:linear-gradient(90deg,#ff6b2b,#ffab3c,#00d4ff,#ff6b2b);background-size:300% auto;animation:shimmer 3s linear infinite;}
-@keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
-.stat-fire-bg{background:linear-gradient(135deg,rgba(255,107,43,.15),rgba(255,171,60,.08));border:1px solid rgba(255,107,43,.2);}
-.stat-ice-bg{background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(6,194,194,.08));border:1px solid rgba(0,212,255,.2);}
-.bg-mesh{background:radial-gradient(ellipse at 20% 20%,rgba(255,107,43,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(0,212,255,.08) 0%,transparent 60%),var(--bg);}
-
-input[type=date]::-webkit-calendar-picker-indicator,
-input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;filter:invert(1);opacity:.4;}
+body { 
+  font-family: 'Outfit', sans-serif; 
+  background-color: var(--bg); 
+  color: var(--text); 
+}
+.glass-card {
+  background: white;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+.input-field {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+  outline: none;
+  transition: border 0.2s;
+}
+.input-field:focus { border-color: var(--primary); }
+.shimmer-btn {
+  background: linear-gradient(90deg, var(--primary), #ff8c42);
+  color: white;
+  font-weight: bold;
+  padding: 12px 24px;
+  border-radius: 12px;
+  transition: transform 0.1s;
+}
+.shimmer-btn:active { transform: scale(0.96); }
 </style>
 </head>
-<body class="bg-mesh">
+<body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect,useContext,createContext,useCallback,useMemo} = React;
+const { useState, useEffect, useContext, createContext } = React;
 
-// ──────────── UTILS ────────────
-const ADMIN = { id:'admin', name:'Admin', email:'admin@fireandicehookah.com', password:'admin123', role:'admin' };
-const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-const payPeriodOf = (dateStr) => {
-  if (!dateStr) return '';
-  const [y,m,d] = dateStr.split('-').map(Number);
-  const lastDay = new Date(y, m, 0).getDate();
-  return d <= 15 ? `${y}-${String(m).padStart(2,'0')}-01-15` : `${y}-${String(m).padStart(2,'0')}-16-${lastDay}`;
-};
-const fmtPP = (pp) => {
-  if (!pp) return '—';
-  const parts = pp.split('-');
-  return `${MONTHS_SHORT[parseInt(parts[1])-1]} ${parseInt(parts[2])}–${parseInt(parts[3])}, ${parts[0]}`;
-};
-const calcHours = (start, end) => {
-  if (!start || !end) return 0;
-  const [sh,sm] = start.split(':').map(Number);
-  const [eh,em] = end.split(':').map(Number);
-  let mins = (eh*60+em) - (sh*60+sm);
+// --- UTILS ---
+const money = (n) => '$' + (+(n || 0)).toFixed(2);
+const calcHours = (s, e) => {
+  if (!s || !e) return 0;
+  const [sh, sm] = s.split(':').map(Number);
+  const [eh, em] = e.split(':').map(Number);
+  let mins = (eh * 60 + em) - (sh * 60 + sm);
   if (mins <= 0) mins += 1440;
   return Math.round(mins * 10 / 60) / 10;
 };
-const money = (n) => '$' + (+(n||0)).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-const hrs = (h) => (Math.round((h||0)*10)/10) + 'h';
-const curPP = () => payPeriodOf(new Date().toISOString().split('T')[0]);
 
-// ──────────── STORAGE ────────────
+// --- DATA LOGIC ---
 const store = {
-  get: (k,def=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
-  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  get: (k) => JSON.parse(localStorage.getItem(k) || '[]'),
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-// ──────────── CSV EXPORT (WITH TOTAL CALCULATION) ────────────
-function downloadCSV(rows, filename, totalColumn = null) {
-  if (!rows || !rows.length) return false;
-  const headers = Object.keys(rows[0]);
-  
-  // Calculate the sum for the total row
-  let totalSum = 0;
-  if (totalColumn) {
-    totalSum = rows.reduce((sum, row) => sum + (Number(row[totalColumn]) || 0), 0);
-  }
+function App() {
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('session') || 'null'));
+  const [view, setView] = useState('login'); // login, register, dashboard
+  const [shifts, setShifts] = useState(store.get('shifts'));
+  const [users, setUsers] = useState(store.get('users'));
 
-  const csvRows = [headers.join(',')];
+  // Registration State
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPass, setRegPass] = useState('');
+  const [regRate, setRegRate] = useState(15);
 
-  // Add data rows
-  rows.forEach(row => {
-    csvRows.push(headers.map(h => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','));
-  });
+  // Login State
+  const [logEmail, setLogEmail] = useState('');
+  const [logPass, setLogPass] = useState('');
 
-  // Add the "Total" row for Excel
-  if (totalColumn) {
-    const totalRow = headers.map(h => {
-      if (h === headers[0]) return `"TOTAL"`;
-      if (h === totalColumn) return `"${totalSum.toFixed(2)}"`;
-      return `""`;
-    });
-    csvRows.push(totalRow.join(','));
-  }
+  // Shift Entry State
+  const [startTime, setStartTime] = useState('18:00');
+  const [endTime, setEndTime] = useState('23:00');
+  const [shiftDate, setShiftDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  return true;
-}
-
-// ──────────── CONTEXTS ────────────
-const AuthCtx = createContext(null);
-const DataCtx = createContext(null);
-
-function DataProvider({ children }) {
-  const [employees, setEmp] = useState(() => store.get('dh4_users', []).filter(u => u.role === 'employee'));
-  const [shifts, setSh] = useState(() => store.get('dh4_shifts', []));
-  const [payroll, setPr] = useState(() => store.get('dh4_payroll', []));
-
-  const sync = (u, s, p) => {
-    if(u){ store.set('dh4_users', [...u, ADMIN]); setEmp(u.filter(x=>x.role==='employee')); }
-    if(s){ store.set('dh4_shifts', s); setSh(s); }
-    if(p){ store.set('dh4_payroll', p); setPr(p); }
+  const handleRegister = (e) => {
+    e.preventDefault();
+    const newUser = { id: Date.now(), name: regName, email: regEmail, password: regPass, rate: Number(regRate) };
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    store.set('users', updatedUsers);
+    alert("Account created! Please login.");
+    setView('login');
   };
 
-  const addShift = (data) => {
-    const ns = { id: Math.random().toString(36).slice(2,9), ...data, hours:calcHours(data.startTime, data.endTime), payPeriod:payPeriodOf(data.date), locked:false };
-    sync(null, [...shifts, ns], null);
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const found = users.find(u => u.email === logEmail && u.password === logPass);
+    if (found) {
+      setUser(found);
+      localStorage.setItem('session', JSON.stringify(found));
+    } else {
+      alert("Invalid credentials");
+    }
   };
 
-  const genPayroll = (pp) => {
-    const results = [];
-    employees.filter(e=>e.status==='approved').forEach(emp => {
-      const es = shifts.filter(s => s.payPeriod === pp && s.empId === emp.id);
-      if(!es.length) return;
-      const totalH = es.reduce((a,s)=>a+s.hours, 0);
-      results.push({
-        id: Math.random().toString(36).slice(2,9), empId: emp.id, empName: emp.name, payPeriod: pp,
-        totalHours: totalH, hourlyRate: emp.hourlyRate, totalPay: totalH * emp.hourlyRate, status: 'pending'
-      });
-    });
-    sync(null, null, [...payroll.filter(p=>p.payPeriod!==pp), ...results]);
+  const addShift = () => {
+    const hrs = calcHours(startTime, endTime);
+    const newShift = { id: Date.now(), userId: user.id, date: shiftDate, hours: hrs, earned: hrs * user.rate };
+    const updated = [...shifts, newShift];
+    setShifts(updated);
+    store.set('shifts', updated);
   };
 
-  // EXPORT WITH TOTALS
-  const exportShifts = (list) => {
-    const data = list.map(s => ({
-      'Date': s.date,
-      'Staff': employees.find(e => e.id === s.empId)?.name || 'Unknown',
-      'Hours': s.hours // Raw number for math
-    }));
-    downloadCSV(data, `Shift_Export_${new Date().toISOString().split('T')[0]}.csv`, 'Hours');
-  };
+  const myShifts = shifts.filter(s => s.userId === user?.id);
+  const totalEarned = myShifts.reduce((a, b) => a + b.earned, 0);
+  const currentSessionEarnings = calcHours(startTime, endTime) * (user?.rate || 0);
 
-  const exportPayroll = (list) => {
-    const data = list.map(p => ({
-      'Employee': p.empName,
-      'Period': p.payPeriod,
-      'Hours': p.totalHours, // Raw number
-      'Total Pay': p.totalPay // Raw number
-    }));
-    downloadCSV(data, `Payroll_Export_${new Date().toISOString().split('T')[0]}.csv`, 'Total Pay');
-  };
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+        <div className="glass-card w-full max-w-md p-8 rounded-3xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-extrabold text-slate-900">Fire & Ice</h1>
+            <p className="text-slate-500">Staff Portal</p>
+          </div>
 
-  return (
-    <DataCtx.Provider value={{ employees, shifts, payroll, addShift, genPayroll, exportShifts, exportPayroll, sync }}>
-      {children}
-    </DataCtx.Provider>
-  );
-}
+          <div className="flex mb-6 bg-slate-100 p-1 rounded-xl">
+            <button onClick={() => setView('login')} className={`flex-1 py-2 rounded-lg font-semibold ${view === 'login' ? 'bg-white shadow' : ''}`}>Login</button>
+            <button onClick={() => setView('register')} className={`flex-1 py-2 rounded-lg font-semibold ${view === 'register' ? 'bg-white shadow' : ''}`}>Register</button>
+          </div>
 
-// ──────────── UI COMPONENTS ────────────
-const Btn = ({children, onClick, variant='primary', full=false}) => (
-  <button onClick={onClick} className={`px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95 ${full?'w-full':''} ${variant==='primary'?'shimmer-btn text-white':'glass text-slate-300'}`}>
-    {children}
-  </button>
-);
-
-const Stat = ({label, value, icon, type='fire'}) => (
-  <div className={`rounded-2xl p-5 border ${type==='fire'?'stat-fire-bg':'stat-ice-bg'}`}>
-    <div className="w-10 h-10 rounded-xl grad-both flex items-center justify-center text-xl mb-4">{icon}</div>
-    <div className="text-2xl font-black text-white">{value}</div>
-    <div className="text-xs font-bold text-slate-500 uppercase mt-1">{label}</div>
-  </div>
-);
-
-// ──────────── PAGES ────────────
-function Dashboard() {
-  const { user } = useContext(AuthCtx);
-  const { shifts, payroll } = useContext(DataCtx);
-  const pp = curPP();
-  const myShifts = shifts.filter(s => user.role === 'admin' ? true : s.empId === user.id);
-  const totalHrs = myShifts.filter(s => s.payPeriod === pp).reduce((a,s)=>a+s.hours, 0);
-
-  return (
-    <div className="p-8 space-y-6 fade-up">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Stat icon="⏱" label="Hours (Current Period)" value={hrs(totalHrs)} />
-        <Stat icon="💵" label="Est. Total Pay" value={money(totalHrs * (user.hourlyRate || 15))} type="ice" />
-        <Stat icon="👥" label="Role" value={user.role.toUpperCase()} />
-      </div>
-      <div className="glass rounded-3xl p-6">
-        <h3 className="text-lg font-black mb-4">Recent Activity</h3>
-        <div className="space-y-2">
-          {myShifts.slice(-3).reverse().map(s => (
-            <div key={s.id} className="flex justify-between p-3 bg-white/5 rounded-xl">
-              <span className="text-sm font-bold">{s.date}</span>
-              <span className="text-orange-500 font-black">{hrs(s.hours)}</span>
-            </div>
-          ))}
+          {view === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input type="email" placeholder="Email" className="input-field" required onChange={e => setLogEmail(e.target.value)} />
+              <input type="password" placeholder="Password" className="input-field" required onChange={e => setLogPass(e.target.value)} />
+              <button className="shimmer-btn w-full">Sign In</button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <input type="text" placeholder="Full Name" className="input-field" required onChange={e => setRegName(e.target.value)} />
+              <input type="email" placeholder="Email" className="input-field" required onChange={e => setRegEmail(e.target.value)} />
+              <input type="password" placeholder="Password" className="input-field" required onChange={e => setRegPass(e.target.value)} />
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400">HOURLY RATE ($)</label>
+                <input type="number" className="input-field" value={regRate} onChange={e => setRegRate(e.target.value)} />
+              </div>
+              <button className="shimmer-btn w-full">Create Account</button>
+            </form>
+          )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function ShiftsPage() {
-  const { user } = useContext(AuthCtx);
-  const { shifts, employees, exportShifts, addShift } = useContext(DataCtx);
-  const [modal, setModal] = useState(false);
-  const list = shifts.filter(s => user.role === 'admin' ? true : s.empId === user.id);
+    );
+  }
 
   return (
-    <div className="p-8 space-y-6 fade-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-black font-[Cinzel]">Shifts</h2>
-        <div className="flex gap-2">
-          <Btn variant="secondary" onClick={()=>exportShifts(list)}>Export to Excel</Btn>
-          <Btn onClick={()=>setModal(true)}>+ Add</Btn>
-        </div>
-      </div>
-      <div className="glass rounded-3xl overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-white/5 text-slate-500 uppercase text-[10px] font-black">
-            <tr>
-              <th className="p-5">Date</th>
-              <th className="p-5">Staff</th>
-              <th className="p-5">Duration</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {list.slice().reverse().map(s => (
-              <tr key={s.id}>
-                <td className="p-5 font-bold">{s.date}</td>
-                <td className="p-5 text-slate-400">{employees.find(e=>e.id===s.empId)?.name || 'Admin'}</td>
-                <td className="p-5 font-black text-orange-500">{hrs(s.hours)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {modal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="glass p-8 rounded-3xl w-full max-w-sm space-y-4">
-            <h2 className="text-xl font-bold">New Shift</h2>
-            <input type="date" id="d" className="w-full bg-white/5 p-3 rounded-xl border border-white/10" defaultValue={new Date().toISOString().split('T')[0]}/>
-            <div className="flex gap-2">
-              <input type="time" id="s" className="w-full bg-white/5 p-3 rounded-xl border border-white/10" defaultValue="18:00"/>
-              <input type="time" id="e" className="w-full bg-white/5 p-3 rounded-xl border border-white/10" defaultValue="23:00"/>
-            </div>
-            <Btn full onClick={()=>{
-              addShift({ empId: user.id, date: document.getElementById('d').value, startTime: document.getElementById('s').value, endTime: document.getElementById('e').value });
-              setModal(false);
-            }}>Save Shift</Btn>
-            <button className="w-full text-slate-500 text-sm" onClick={()=>setModal(false)}>Cancel</button>
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      {/* Sidebar */}
+      <aside className="w-full md:w-64 border-r border-slate-200 p-6 flex flex-col">
+        <h2 className="text-xl font-extrabold mb-10 text-orange-600">FIRE & ICE</h2>
+        <div className="flex-1 space-y-4">
+          <div className="p-4 bg-orange-50 rounded-2xl">
+            <p className="text-xs font-bold text-orange-400">WELCOME</p>
+            <p className="font-bold text-slate-800">{user.name}</p>
+            <p className="text-sm text-slate-500">${user.rate}/hr</p>
           </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-// ──────────── AUTH & APP ────────────
-function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('dh4_user')));
-  const login = (e, p) => {
-    if (e === 'admin' && p === 'admin123') {
-      const u = { ...ADMIN, hourlyRate: 20 };
-      localStorage.setItem('dh4_user', JSON.stringify(u));
-      setUser(u);
-      return true;
-    }
-    return false;
-  };
-  return <AuthCtx.Provider value={{ user, login, logout: ()=> {localStorage.removeItem('dh4_user'); setUser(null);} }}>{children}</AuthCtx.Provider>;
-}
-
-function App() {
-  const { user, login, logout } = useContext(AuthCtx);
-  const [page, setPage] = useState('dashboard');
-  const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
-
-  if(!user) return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="glass max-w-sm w-full p-10 rounded-[40px] text-center space-y-6">
-        <div className="w-16 h-16 grad-both rounded-2xl flex items-center justify-center text-3xl mx-auto glow-fire">🔥</div>
-        <h1 className="text-2xl font-black font-[Cinzel]">Staff Portal</h1>
-        <div className="space-y-3">
-          <input type="text" placeholder="Username" className="w-full bg-white/5 p-4 rounded-2xl border border-white/10" value={email} onChange={e=>setEmail(e.target.value)}/>
-          <input type="password" placeholder="Password" className="w-full bg-white/5 p-4 rounded-2xl border border-white/10" value={pass} onChange={e=>setPass(e.target.value)}/>
-          <Btn full onClick={()=>login(email, pass)}>Sign In</Btn>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="w-64 bg-[#060810] border-r border-white/5 p-6 flex flex-col">
-        <div className="font-black font-[Cinzel] tracking-widest text-sm mb-10">FIRE & ICE</div>
-        <nav className="flex-1 space-y-2">
-          {['dashboard', 'shifts'].map(p => (
-            <button key={p} onClick={()=>setPage(p)} className={`w-full text-left px-4 py-3 rounded-xl font-bold capitalize ${page===p?'bg-orange-500/10 text-orange-500':'text-slate-500'}`}>{p}</button>
-          ))}
-        </nav>
-        <button onClick={logout} className="text-xs font-bold text-slate-700 hover:text-red-500 text-left">LOGOUT ⏻</button>
+        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500">SIGN OUT</button>
       </aside>
-      <main className="flex-1 overflow-y-auto bg-mesh">
-        {page==='dashboard' ? <Dashboard /> : <ShiftsPage />}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-12 max-w-4xl">
+        <h1 className="text-3xl font-extrabold mb-8">Earnings Dashboard</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="glass-card p-6 rounded-3xl border-l-4 border-l-orange-500">
+            <p className="text-sm font-bold text-slate-400">TOTAL EARNINGS</p>
+            <p className="text-4xl font-extrabold text-slate-900">{money(totalEarned)}</p>
+          </div>
+          <div className="glass-card p-6 rounded-3xl border-l-4 border-l-cyan-500">
+            <p className="text-sm font-bold text-slate-400">TOTAL SHIFTS</p>
+            <p className="text-4xl font-extrabold text-slate-900">{myShifts.length}</p>
+          </div>
+        </div>
+
+        {/* Shift Entry */}
+        <div className="glass-card p-8 rounded-3xl mb-10">
+          <h3 className="text-xl font-bold mb-6">Log New Shift</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
+            <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
+          </div>
+          
+          <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center mb-6">
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase">Estimated Earnings for this shift</p>
+              <p className="text-2xl font-black text-orange-600">{money(currentSessionEarnings)}</p>
+            </div>
+            <button onClick={addShift} className="shimmer-btn">Submit Shift</button>
+          </div>
+        </div>
+
+        {/* History Table */}
+        <div className="glass-card rounded-3xl overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="p-4 text-xs font-bold text-slate-400">DATE</th>
+                <th className="p-4 text-xs font-bold text-slate-400">HOURS</th>
+                <th className="p-4 text-xs font-bold text-slate-400">EARNED</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myShifts.slice().reverse().map(s => (
+                <tr key={s.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                  <td className="p-4 font-semibold">{s.date}</td>
+                  <td className="p-4 text-slate-500">{s.hours}h</td>
+                  <td className="p-4 font-bold text-slate-900">{money(s.earned)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </main>
     </div>
   );
 }
 
-const Root = () => (
-  <AuthProvider><DataProvider><App /></DataProvider></AuthProvider>
-);
-
-ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
