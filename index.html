@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fire & Ice — Luxury Staff Portal</title>
+<title>Fire & Ice — AI Luxury Portal</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,9 +11,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet"/>
 <style>
 :root { --primary: #ff6b2b; --ice: #00d4ff; --bg: #ffffff; --text: #0f172a; --border: #e2e8f0; }
-body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); overflow-x: hidden; }
+body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); }
 
-/* Holographic Luxury Border Card */
+/* Holographic Luxury Card */
 .lounge-card {
   background: white;
   border: 1px solid transparent;
@@ -24,7 +24,12 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: va
   border-radius: 24px;
 }
 
-/* coal-glow shimmer button */
+/* AI Highlight Box */
+.ai-glow {
+  background: linear-gradient(to right, rgba(0, 212, 255, 0.05), rgba(255, 107, 43, 0.05));
+  border: 1px dashed #cbd5e1;
+}
+
 .shimmer-btn {
   background: linear-gradient(90deg, var(--primary), #ff8c42, var(--ice), var(--primary));
   background-size: 300% auto;
@@ -33,15 +38,11 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: va
   padding: 12px 28px;
   border-radius: 14px;
   animation: shimmer 5s infinite linear;
-  transition: transform 0.2s;
 }
-.shimmer-btn:hover { transform: scale(1.02); }
-.shimmer-btn:active { transform: scale(0.98); }
-
 @keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 300% center; } }
 
-.input-field { background: #f1f5f9; border-radius: 12px; padding: 12px; width: 100%; outline: none; border: 1px solid transparent; transition: all 0.2s; }
-.input-field:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(255,107,43,0.1); }
+.input-field { background: #f1f5f9; border-radius: 12px; padding: 12px; width: 100%; outline: none; border: 1px solid transparent; transition: 0.2s; }
+.input-field:focus { border-color: var(--primary); background: white; }
 </style>
 </head>
 <body>
@@ -49,7 +50,9 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: va
 <script type="text/babel">
 const { useState, useEffect } = React;
 
+// --- UTILS & AI BRAIN ---
 const money = (n) => '$' + (+(n || 0)).toFixed(2);
+
 const calcHours = (s, e) => {
   if (!s || !e) return 0;
   const [sh, sm] = s.split(':').map(Number);
@@ -59,41 +62,48 @@ const calcHours = (s, e) => {
   return Math.round(mins * 10 / 60) / 10;
 };
 
+const getAIAdvice = (totalEarned, shiftCount, role) => {
+  if (role === 'admin') {
+    if (totalEarned > 1000) return "🚀 Payouts are high this week. AI suggests reviewing the 'Party' vibes to see if you need more coal stock.";
+    return "💡 Business is steady. AI recommends a social media 'Fire Night' promo to fill mid-week gaps.";
+  } else {
+    if (shiftCount < 2) return "❄️ Your energy is preserved. AI suggests picking up a weekend shift to maximize your payout.";
+    return "🔥 You're trending as a top earner! AI suggests ensuring you're logging 'Busy' vibes to help the owner with analytics.";
+  }
+};
+
 const store = {
   get: (k) => JSON.parse(localStorage.getItem(k) || '[]'),
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-// --- ENHANCED CSV EXPORT ---
+// --- EXCEL EXPORT ---
 function downloadShiftsCSV(data, role) {
   if (!data || !data.length) return alert("No shifts to export.");
-
   const headers = role === 'admin' 
     ? ["Date", "Staff Name", "Start Time", "End Time", "Vibe", "Hours", "Earned ($)"]
     : ["Date", "Start Time", "End Time", "Vibe", "Hours", "Earned ($)"];
 
   const rows = [];
-  let totalH = 0; let totalP = 0;
+  let tH = 0; let tP = 0;
 
   data.forEach(s => {
-    totalH += s.hours; totalP += s.earned;
+    tH += (s.hours || 0); tP += (s.earned || 0);
     const row = role === 'admin'
-      ? [s.date, s.userName, s.startTime, s.endTime, s.vibe || 'N/A', s.hours, s.earned.toFixed(2)]
-      : [s.date, s.startTime, s.endTime, s.vibe || 'N/A', s.hours, s.earned.toFixed(2)];
+      ? [s.date, s.userName, s.startTime, s.endTime, s.vibe, s.hours, s.earned.toFixed(2)]
+      : [s.date, s.startTime, s.endTime, s.vibe, s.hours, s.earned.toFixed(2)];
     rows.push(row.map(v => `"${v}"`).join(","));
   });
 
   const totalRow = role === 'admin' 
-    ? ["TOTAL", "", "", "", "", totalH.toFixed(2), totalP.toFixed(2)]
-    : ["TOTAL", "", "", "", totalH.toFixed(2), totalP.toFixed(2)];
+    ? ["TOTAL", "", "", "", "", tH.toFixed(2), tP.toFixed(2)]
+    : ["TOTAL", "", "", "", tH.toFixed(2), tP.toFixed(2)];
   rows.push(totalRow.join(","));
 
-  const csvContent = headers.join(",") + "\n" + rows.join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
+  const blob = new Blob([headers.join(",") + "\n" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
-  link.href = url;
-  link.download = `Fire_Ice_Report_${new Date().toISOString().split('T')[0]}.csv`;
+  link.href = URL.createObjectURL(blob);
+  link.download = `Fire_Ice_AI_Report.csv`;
   link.click();
 }
 
@@ -105,7 +115,6 @@ function App() {
   const [shifts, setShifts] = useState(store.get('shifts'));
   const [users, setUsers] = useState(store.get('users'));
 
-  // Registration & Shift State
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
@@ -117,7 +126,6 @@ function App() {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    if (regEmail.toLowerCase() === 'admin') return alert("Reserved.");
     const newUser = { id: Date.now(), name: regName, email: regEmail.toLowerCase(), password: regPass, rate: Number(regRate), role: 'staff' };
     const updated = [...users, newUser];
     setUsers(updated); store.set('users', updated);
@@ -128,27 +136,22 @@ function App() {
     e.preventDefault();
     const em = document.getElementById('logEmail').value.toLowerCase();
     const ps = document.getElementById('logPass').value;
-    if (em === ADMIN_USER.email && ps === ADMIN_USER.password) {
+    if (em === 'admin' && ps === 'admin123') {
       setUser(ADMIN_USER); localStorage.setItem('session', JSON.stringify(ADMIN_USER));
       return;
     }
     const found = users.find(u => u.email === em && u.password === ps);
     if (found) { setUser(found); localStorage.setItem('session', JSON.stringify(found)); }
-    else alert("Wrong credentials");
+    else alert("Access Denied");
   };
 
   const addShift = () => {
     const hrs = calcHours(startTime, endTime);
-    const newShift = { 
-      id: Date.now(), userId: user.id, userName: user.name, date: shiftDate, 
-      startTime, endTime, hours: hrs, earned: hrs * user.rate, vibe: shiftVibe 
-    };
+    const newShift = { id: Date.now(), userId: user.id, userName: user.name, date: shiftDate, startTime, endTime, hours: hrs, earned: hrs * user.rate, vibe: shiftVibe };
     const updated = [...shifts, newShift];
     setShifts(updated); store.set('shifts', updated);
     alert("Session Ignited!");
   };
-
-  const deleteShift = (id) => { if(confirm("Delete record?")) { const u = shifts.filter(s => s.id !== id); setShifts(u); store.set('shifts', u); } };
 
   const visibleShifts = user?.role === 'admin' ? shifts : shifts.filter(s => s.userId === user?.id);
   const totalEarned = visibleShifts.reduce((a, b) => a + b.earned, 0);
@@ -157,29 +160,24 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="lounge-card w-full max-w-md p-10 text-center space-y-8">
-          <div>
-            <h1 className="text-4xl font-black tracking-tighter uppercase">Fire & <span className="text-cyan-400">Ice</span></h1>
-            <p className="text-slate-400 text-sm mt-2">Lounge Commander Access</p>
-          </div>
-          
+          <h1 className="text-4xl font-black tracking-tighter">FIRE & <span className="text-cyan-400">ICE</span></h1>
           <div className="flex bg-slate-100 p-1 rounded-xl">
             <button onClick={() => setView('login')} className={`flex-1 py-2 rounded-lg font-bold ${view === 'login' ? 'bg-white shadow-sm' : ''}`}>Login</button>
-            <button onClick={() => setView('register')} className={`flex-1 py-2 rounded-lg font-bold ${view === 'register' ? 'bg-white shadow-sm' : ''}`}>Join Team</button>
+            <button onClick={() => setView('register')} className={`flex-1 py-2 rounded-lg font-bold ${view === 'register' ? 'bg-white shadow-sm' : ''}`}>Register</button>
           </div>
-
           {view === 'login' ? (
             <div className="space-y-4">
-              <input id="logEmail" type="text" placeholder="Username (admin) or Email" className="input-field" />
+              <input id="logEmail" type="text" placeholder="Username" className="input-field" />
               <input id="logPass" type="password" placeholder="Password" className="input-field" />
-              <button onClick={handleLogin} className="shimmer-btn w-full">Ignite Portal</button>
+              <button onClick={handleLogin} className="shimmer-btn w-full">Enter Lounge</button>
             </div>
           ) : (
-            <form onSubmit={handleRegister} className="space-y-4 text-left">
+            <form onSubmit={handleRegister} className="space-y-4">
               <input type="text" placeholder="Full Name" className="input-field" required onChange={e => setRegName(e.target.value)} />
               <input type="email" placeholder="Email" className="input-field" required onChange={e => setRegEmail(e.target.value)} />
               <input type="password" placeholder="Password" className="input-field" required onChange={e => setRegPass(e.target.value)} />
-              <input type="number" placeholder="Hourly Rate ($)" className="input-field" required onChange={e => setRegRate(e.target.value)} />
-              <button className="shimmer-btn w-full">Create Profile</button>
+              <input type="number" placeholder="Rate ($)" className="input-field" required onChange={e => setRegRate(e.target.value)} />
+              <button className="shimmer-btn w-full">Join Team</button>
             </form>
           )}
         </div>
@@ -188,87 +186,84 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* SIDEBAR */}
-      <aside className="w-full md:w-64 border-r border-slate-100 p-8 flex flex-col bg-white">
-        <h2 className="text-2xl font-black tracking-tighter mb-12">FIRE & <span className="text-cyan-400">ICE</span></h2>
-        <div className="flex-1 space-y-6">
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Profile</p>
-            <p className="font-extrabold text-slate-800">{user.name}</p>
-            <p className="text-xs text-orange-500 font-bold">{user.role.toUpperCase()}</p>
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      <aside className="w-full md:w-64 border-r p-8 flex flex-col">
+        <h2 className="text-2xl font-black tracking-tighter mb-10">FIRE & <span className="text-cyan-400">ICE</span></h2>
+        <div className="flex-1 space-y-4">
+          <div className="p-4 bg-slate-50 rounded-2xl border">
+            <p className="text-[10px] font-black text-slate-400 uppercase">Profile</p>
+            <p className="font-extrabold">{user.name}</p>
           </div>
         </div>
-        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left font-black text-red-400 hover:text-red-600 transition-colors">EXIT LOG ⏻</button>
+        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-red-400">SIGN OUT</button>
       </aside>
 
-      {/* MAIN */}
-      <main className="flex-1 p-8 md:p-16 max-w-7xl">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
-          <h1 className="text-4xl font-black tracking-tighter">{user.role === 'admin' ? 'THE PULSE' : 'MY SESSIONS'}</h1>
-          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="btn-secondary hover:border-orange-500 transition-all">📥 Export Excel Data</button>
-        </header>
-
-        {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="lounge-card p-8 border-l-8 border-l-orange-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Earnings</p>
-            <p className="text-5xl font-black text-slate-900">{money(totalEarned)}</p>
-          </div>
-          <div className="lounge-card p-8 border-l-8 border-l-cyan-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Shifts Completed</p>
-            <p className="text-5xl font-black text-slate-900">{visibleShifts.length}</p>
+      <main className="flex-1 p-8 md:p-16 max-w-6xl">
+        {/* AI ADVICE SECTION */}
+        <div className="lounge-card p-6 mb-10 ai-glow">
+          <div className="flex items-center gap-4">
+            <span className="text-2xl">🤖</span>
+            <div>
+              <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">AI Strategist Advice</p>
+              <p className="text-sm font-semibold text-slate-700">{getAIAdvice(totalEarned, visibleShifts.length, user.role)}</p>
+            </div>
           </div>
         </div>
 
-        {/* LOG SHIFT - ONLY FOR STAFF */}
+        <header className="flex justify-between items-center mb-10">
+          <h1 className="text-4xl font-black uppercase tracking-tighter">{user.role === 'admin' ? 'The Pulse' : 'Dashboard'}</h1>
+          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="px-5 py-2 border rounded-xl font-bold text-sm">📥 Export CSV</button>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+          <div className="lounge-card p-8 border-l-8 border-l-orange-500">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Earnings</p>
+            <p className="text-5xl font-black">{money(totalEarned)}</p>
+          </div>
+          <div className="lounge-card p-8 border-l-8 border-l-cyan-500">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Records</p>
+            <p className="text-5xl font-black">{visibleShifts.length}</p>
+          </div>
+        </div>
+
         {user.role !== 'admin' && (
-          <div className="lounge-card p-10 mb-12 space-y-8">
-            <h3 className="text-xl font-extrabold">Log Your Session Vibe</h3>
+          <div className="lounge-card p-10 mb-10 space-y-6">
+            <h3 className="text-xl font-bold">New Session Log</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
-              <div className="flex gap-2">
-                <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
-                <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
-              </div>
+              <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
+              <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            </div>
+            <div className="flex flex-wrap gap-4 items-center justify-between">
               <div className="flex gap-2">
                 {['❄️ Chill', '🔥 Busy', '🎉 Party'].map(v => (
-                  <button key={v} onClick={() => setShiftVibe(v)} className={`flex-1 rounded-xl text-sm font-bold border transition-all ${shiftVibe === v ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200'}`}>{v}</button>
+                  <button key={v} onClick={() => setShiftVibe(v)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${shiftVibe === v ? 'bg-slate-900 text-white' : 'bg-white'}`}>{v}</button>
                 ))}
-              </div>
-            </div>
-            <div className="flex justify-between items-center bg-orange-50 p-6 rounded-2xl border border-orange-100">
-              <div>
-                <p className="text-xs font-black text-orange-400 uppercase tracking-widest">Session Earnings</p>
-                <p className="text-3xl font-black text-orange-600">{money(calcHours(startTime, endTime) * user.rate)}</p>
               </div>
               <button onClick={addShift} className="shimmer-btn">Ignite Shift</button>
             </div>
           </div>
         )}
 
-        {/* TABLE */}
         <div className="lounge-card overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-100">
+            <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Date</th>
-                {user.role === 'admin' && <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Staff</th>}
-                <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Vibe</th>
-                <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Time Span</th>
-                <th className="p-6 text-[10px] font-black text-slate-400 uppercase text-right">Payout</th>
-                <th className="p-6"></th>
+                <th className="p-6 text-xs font-black text-slate-400">DATE</th>
+                {user.role === 'admin' && <th className="p-6 text-xs font-black text-slate-400">STAFF</th>}
+                <th className="p-6 text-xs font-black text-slate-400">VIBE</th>
+                <th className="p-6 text-xs font-black text-slate-400">HOURS</th>
+                <th className="p-6 text-xs font-black text-slate-400 text-right">TOTAL</th>
               </tr>
             </thead>
             <tbody>
               {visibleShifts.slice().reverse().map(s => (
-                <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-all">
+                <tr key={s.id} className="border-b hover:bg-slate-50">
                   <td className="p-6 font-bold">{s.date}</td>
-                  {user.role === 'admin' && <td className="p-6 text-slate-600 font-medium">{s.userName}</td>}
-                  <td className="p-6"><span className="px-3 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black">{s.vibe || '❄️ Chill'}</span></td>
-                  <td className="p-6 text-slate-500 font-mono text-sm">{s.startTime} — {s.endTime} <span className="text-[10px] ml-1 bg-slate-100 px-1 rounded">({s.hours}h)</span></td>
-                  <td className="p-6 font-black text-slate-900 text-right">{money(s.earned)}</td>
-                  <td className="p-6 text-right"><button onClick={() => deleteShift(s.id)} className="text-slate-300 hover:text-red-400 font-bold transition-colors">×</button></td>
+                  {user.role === 'admin' && <td className="p-6 font-medium text-slate-600">{s.userName}</td>}
+                  <td className="p-6"><span className="px-3 py-1 bg-white border rounded-full text-[10px] font-black">{s.vibe}</span></td>
+                  <td className="p-6 text-slate-500 font-mono text-sm">{s.startTime}-{s.endTime} ({s.hours}h)</td>
+                  <td className="p-6 font-black text-right">{money(s.earned)}</td>
                 </tr>
               ))}
             </tbody>
