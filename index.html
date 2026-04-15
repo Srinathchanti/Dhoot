@@ -3,20 +3,45 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fire & Ice — Staff Portal</title>
+<title>Fire & Ice — Luxury Staff Portal</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet"/>
 <style>
-:root { --primary: #ff6b2b; --bg: #ffffff; --surface: #f8fafc; --text: #0f172a; --border: #e2e8f0; }
-body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); }
-.glass-card { background: white; border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-.input-field { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; width: 100%; outline: none; }
-.input-field:focus { border-color: var(--primary); }
-.shimmer-btn { background: linear-gradient(90deg, var(--primary), #ff8c42); color: white; font-weight: bold; padding: 12px 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.btn-secondary { border: 1px solid var(--border); background: white; padding: 10px 20px; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+:root { --primary: #ff6b2b; --ice: #00d4ff; --bg: #ffffff; --text: #0f172a; --border: #e2e8f0; }
+body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* Holographic Luxury Border Card */
+.lounge-card {
+  background: white;
+  border: 1px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, var(--primary), var(--ice));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+  border-radius: 24px;
+}
+
+/* coal-glow shimmer button */
+.shimmer-btn {
+  background: linear-gradient(90deg, var(--primary), #ff8c42, var(--ice), var(--primary));
+  background-size: 300% auto;
+  color: white;
+  font-weight: 800;
+  padding: 12px 28px;
+  border-radius: 14px;
+  animation: shimmer 5s infinite linear;
+  transition: transform 0.2s;
+}
+.shimmer-btn:hover { transform: scale(1.02); }
+.shimmer-btn:active { transform: scale(0.98); }
+
+@keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: 300% center; } }
+
+.input-field { background: #f1f5f9; border-radius: 12px; padding: 12px; width: 100%; outline: none; border: 1px solid transparent; transition: all 0.2s; }
+.input-field:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(255,107,43,0.1); }
 </style>
 </head>
 <body>
@@ -39,47 +64,40 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-// --- CSV EXPORT LOGIC ---
+// --- ENHANCED CSV EXPORT ---
 function downloadShiftsCSV(data, role) {
   if (!data || !data.length) return alert("No shifts to export.");
 
-  // Headers defined exactly like your screenshot
   const headers = role === 'admin' 
-    ? ["Date", "Staff Name", "Start Time", "End Time", "Hours", "Earned ($)"]
-    : ["Date", "Start Time", "End Time", "Hours", "Earned ($)"];
+    ? ["Date", "Staff Name", "Start Time", "End Time", "Vibe", "Hours", "Earned ($)"]
+    : ["Date", "Start Time", "End Time", "Vibe", "Hours", "Earned ($)"];
 
   const rows = [];
-  let totalHours = 0;
-  let totalPay = 0;
+  let totalH = 0; let totalP = 0;
 
   data.forEach(s => {
-    totalHours += (s.hours || 0);
-    totalPay += (s.earned || 0);
-    
-    // Explicitly mapping s.startTime and s.endTime to the CSV
+    totalH += s.hours; totalP += s.earned;
     const row = role === 'admin'
-      ? [s.date, s.userName, s.startTime || "N/A", s.endTime || "N/A", s.hours, s.earned.toFixed(2)]
-      : [s.date, s.startTime || "N/A", s.endTime || "N/A", s.hours, s.earned.toFixed(2)];
+      ? [s.date, s.userName, s.startTime, s.endTime, s.vibe || 'N/A', s.hours, s.earned.toFixed(2)]
+      : [s.date, s.startTime, s.endTime, s.vibe || 'N/A', s.hours, s.earned.toFixed(2)];
     rows.push(row.map(v => `"${v}"`).join(","));
   });
 
-  const totalRow = role === 'admin'
-    ? ["TOTAL", "", "", "", totalHours.toFixed(2), totalPay.toFixed(2)]
-    : ["TOTAL", "", "", totalHours.toFixed(2), totalPay.toFixed(2)];
-  rows.push(totalRow.map(v => `"${v}"`).join(","));
+  const totalRow = role === 'admin' 
+    ? ["TOTAL", "", "", "", "", totalH.toFixed(2), totalP.toFixed(2)]
+    : ["TOTAL", "", "", "", totalH.toFixed(2), totalP.toFixed(2)];
+  rows.push(totalRow.join(","));
 
   const csvContent = headers.join(",") + "\n" + rows.join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `Fire_Ice_Shifts_${new Date().toISOString().split('T')[0]}.csv`);
-  document.body.appendChild(link);
+  link.href = url;
+  link.download = `Fire_Ice_Report_${new Date().toISOString().split('T')[0]}.csv`;
   link.click();
-  document.body.removeChild(link);
 }
 
-const ADMIN_USER = { id: 'admin-root', name: 'Account Owner', email: 'admin', password: 'admin123', rate: 0, role: 'admin' };
+const ADMIN_USER = { id: 'admin-root', name: 'Srinath (Owner)', email: 'admin', password: 'admin123', role: 'admin', rate: 0 };
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('session') || 'null'));
@@ -87,95 +105,81 @@ function App() {
   const [shifts, setShifts] = useState(store.get('shifts'));
   const [users, setUsers] = useState(store.get('users'));
 
+  // Registration & Shift State
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPass, setRegPass] = useState('');
   const [regRate, setRegRate] = useState(15);
-  const [logEmail, setLogEmail] = useState('');
-  const [logPass, setLogPass] = useState('');
-
   const [startTime, setStartTime] = useState('18:00');
   const [endTime, setEndTime] = useState('23:00');
   const [shiftDate, setShiftDate] = useState(new Date().toISOString().split('T')[0]);
+  const [shiftVibe, setShiftVibe] = useState('❄️ Chill');
 
   const handleRegister = (e) => {
     e.preventDefault();
-    if (regEmail.toLowerCase() === 'admin') return alert("Reserved username.");
+    if (regEmail.toLowerCase() === 'admin') return alert("Reserved.");
     const newUser = { id: Date.now(), name: regName, email: regEmail.toLowerCase(), password: regPass, rate: Number(regRate), role: 'staff' };
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    store.set('users', updatedUsers);
+    const updated = [...users, newUser];
+    setUsers(updated); store.set('users', updated);
     setView('login');
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const inputEmail = logEmail.toLowerCase();
-    if (inputEmail === ADMIN_USER.email && logPass === ADMIN_USER.password) {
-      setUser(ADMIN_USER);
-      localStorage.setItem('session', JSON.stringify(ADMIN_USER));
+    const em = document.getElementById('logEmail').value.toLowerCase();
+    const ps = document.getElementById('logPass').value;
+    if (em === ADMIN_USER.email && ps === ADMIN_USER.password) {
+      setUser(ADMIN_USER); localStorage.setItem('session', JSON.stringify(ADMIN_USER));
       return;
     }
-    const found = users.find(u => u.email === inputEmail && u.password === logPass);
-    if (found) {
-      setUser(found);
-      localStorage.setItem('session', JSON.stringify(found));
-    } else alert("Invalid credentials");
+    const found = users.find(u => u.email === em && u.password === ps);
+    if (found) { setUser(found); localStorage.setItem('session', JSON.stringify(found)); }
+    else alert("Wrong credentials");
   };
 
   const addShift = () => {
-    const hrsCalculated = calcHours(startTime, endTime);
+    const hrs = calcHours(startTime, endTime);
     const newShift = { 
-      id: Date.now(), 
-      userId: user.id, 
-      userName: user.name, 
-      date: shiftDate, 
-      startTime: startTime, // Crucial: Saving exactly as named
-      endTime: endTime,     // Crucial: Saving exactly as named
-      hours: hrsCalculated, 
-      earned: hrsCalculated * user.rate 
+      id: Date.now(), userId: user.id, userName: user.name, date: shiftDate, 
+      startTime, endTime, hours: hrs, earned: hrs * user.rate, vibe: shiftVibe 
     };
     const updated = [...shifts, newShift];
-    setShifts(updated);
-    store.set('shifts', updated);
-    alert("Shift Logged!");
+    setShifts(updated); store.set('shifts', updated);
+    alert("Session Ignited!");
   };
 
-  const deleteShift = (id) => {
-    if(window.confirm("Delete?")) {
-      const updated = shifts.filter(s => s.id !== id);
-      setShifts(updated);
-      store.set('shifts', updated);
-    }
-  };
+  const deleteShift = (id) => { if(confirm("Delete record?")) { const u = shifts.filter(s => s.id !== id); setShifts(u); store.set('shifts', u); } };
 
   const visibleShifts = user?.role === 'admin' ? shifts : shifts.filter(s => s.userId === user?.id);
+  const totalEarned = visibleShifts.reduce((a, b) => a + b.earned, 0);
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-        <div className="glass-card w-full max-w-md p-8 rounded-3xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-extrabold text-slate-900">Fire & Ice</h1>
-            <p className="text-slate-500">Staff Portal</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="lounge-card w-full max-w-md p-10 text-center space-y-8">
+          <div>
+            <h1 className="text-4xl font-black tracking-tighter uppercase">Fire & <span className="text-cyan-400">Ice</span></h1>
+            <p className="text-slate-400 text-sm mt-2">Lounge Commander Access</p>
           </div>
-          <div className="flex mb-6 bg-slate-100 p-1 rounded-xl">
-            <button onClick={() => setView('login')} className={`flex-1 py-2 rounded-lg font-semibold ${view === 'login' ? 'bg-white shadow' : ''}`}>Login</button>
-            <button onClick={() => setView('register')} className={`flex-1 py-2 rounded-lg font-semibold ${view === 'register' ? 'bg-white shadow' : ''}`}>Register</button>
+          
+          <div className="flex bg-slate-100 p-1 rounded-xl">
+            <button onClick={() => setView('login')} className={`flex-1 py-2 rounded-lg font-bold ${view === 'login' ? 'bg-white shadow-sm' : ''}`}>Login</button>
+            <button onClick={() => setView('register')} className={`flex-1 py-2 rounded-lg font-bold ${view === 'register' ? 'bg-white shadow-sm' : ''}`}>Join Team</button>
           </div>
+
           {view === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input type="text" placeholder="Username (admin) or Email" className="input-field" required onChange={e => setLogEmail(e.target.value)} />
-              <input type="password" placeholder="Password" className="input-field" required onChange={e => setLogPass(e.target.value)} />
-              <button className="shimmer-btn w-full">Sign In</button>
-            </form>
+            <div className="space-y-4">
+              <input id="logEmail" type="text" placeholder="Username (admin) or Email" className="input-field" />
+              <input id="logPass" type="password" placeholder="Password" className="input-field" />
+              <button onClick={handleLogin} className="shimmer-btn w-full">Ignite Portal</button>
+            </div>
           ) : (
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4 text-left">
               <input type="text" placeholder="Full Name" className="input-field" required onChange={e => setRegName(e.target.value)} />
               <input type="email" placeholder="Email" className="input-field" required onChange={e => setRegEmail(e.target.value)} />
               <input type="password" placeholder="Password" className="input-field" required onChange={e => setRegPass(e.target.value)} />
-              <div className="space-y-1"><label className="text-xs font-bold text-slate-400">HOURLY RATE ($)</label><input type="number" className="input-field" value={regRate} onChange={e => setRegRate(e.target.value)} /></div>
-              <button className="shimmer-btn w-full">Create Account</button>
+              <input type="number" placeholder="Hourly Rate ($)" className="input-field" required onChange={e => setRegRate(e.target.value)} />
+              <button className="shimmer-btn w-full">Create Profile</button>
             </form>
           )}
         </div>
@@ -184,64 +188,87 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-white">
-      <aside className="w-full md:w-64 border-r border-slate-200 p-6 flex flex-col">
-        <h2 className="text-xl font-extrabold mb-10 text-orange-600">FIRE & ICE</h2>
-        <div className="flex-1 space-y-4">
-          <div className="p-4 bg-orange-50 rounded-2xl">
-            <p className="text-xs font-bold text-orange-400">LOGGED IN AS</p>
-            <p className="font-bold text-slate-800">{user.name}</p>
-            <p className="text-xs font-bold text-slate-500 uppercase mt-1">{user.role}</p>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* SIDEBAR */}
+      <aside className="w-full md:w-64 border-r border-slate-100 p-8 flex flex-col bg-white">
+        <h2 className="text-2xl font-black tracking-tighter mb-12">FIRE & <span className="text-cyan-400">ICE</span></h2>
+        <div className="flex-1 space-y-6">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Profile</p>
+            <p className="font-extrabold text-slate-800">{user.name}</p>
+            <p className="text-xs text-orange-500 font-bold">{user.role.toUpperCase()}</p>
           </div>
         </div>
-        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500">SIGN OUT</button>
+        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left font-black text-red-400 hover:text-red-600 transition-colors">EXIT LOG ⏻</button>
       </aside>
 
-      <main className="flex-1 p-6 md:p-12 max-w-6xl">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-extrabold">{user.role === 'admin' ? 'Master Records' : 'My Earnings'}</h1>
-          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="btn-secondary">📥 Export CSV</button>
+      {/* MAIN */}
+      <main className="flex-1 p-8 md:p-16 max-w-7xl">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
+          <h1 className="text-4xl font-black tracking-tighter">{user.role === 'admin' ? 'THE PULSE' : 'MY SESSIONS'}</h1>
+          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="btn-secondary hover:border-orange-500 transition-all">📥 Export Excel Data</button>
+        </header>
+
+        {/* STATS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="lounge-card p-8 border-l-8 border-l-orange-500">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Earnings</p>
+            <p className="text-5xl font-black text-slate-900">{money(totalEarned)}</p>
+          </div>
+          <div className="lounge-card p-8 border-l-8 border-l-cyan-500">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Shifts Completed</p>
+            <p className="text-5xl font-black text-slate-900">{visibleShifts.length}</p>
+          </div>
         </div>
-        
+
+        {/* LOG SHIFT - ONLY FOR STAFF */}
         {user.role !== 'admin' && (
-          <div className="glass-card p-8 rounded-3xl mb-10">
-            <h3 className="text-xl font-bold mb-6">Log New Shift</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400">DATE</label><input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400">START</label><input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400">END</label><input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} /></div>
+          <div className="lounge-card p-10 mb-12 space-y-8">
+            <h3 className="text-xl font-extrabold">Log Your Session Vibe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <input type="date" className="input-field" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
+              <div className="flex gap-2">
+                <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
+              </div>
+              <div className="flex gap-2">
+                {['❄️ Chill', '🔥 Busy', '🎉 Party'].map(v => (
+                  <button key={v} onClick={() => setShiftVibe(v)} className={`flex-1 rounded-xl text-sm font-bold border transition-all ${shiftVibe === v ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200'}`}>{v}</button>
+                ))}
+              </div>
             </div>
-            <div className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center">
-              <button onClick={addShift} className="shimmer-btn">Submit Shift</button>
+            <div className="flex justify-between items-center bg-orange-50 p-6 rounded-2xl border border-orange-100">
+              <div>
+                <p className="text-xs font-black text-orange-400 uppercase tracking-widest">Session Earnings</p>
+                <p className="text-3xl font-black text-orange-600">{money(calcHours(startTime, endTime) * user.rate)}</p>
+              </div>
+              <button onClick={addShift} className="shimmer-btn">Ignite Shift</button>
             </div>
           </div>
         )}
 
-        <div className="glass-card rounded-3xl overflow-hidden">
+        {/* TABLE */}
+        <div className="lounge-card overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="p-4 text-xs font-bold text-slate-400">DATE</th>
-                {user.role === 'admin' && <th className="p-4 text-xs font-bold text-slate-400">STAFF</th>}
-                <th className="p-4 text-xs font-bold text-slate-400">START</th>
-                <th className="p-4 text-xs font-bold text-slate-400">END</th>
-                <th className="p-4 text-xs font-bold text-slate-400">HOURS</th>
-                <th className="p-4 text-xs font-bold text-slate-400">PAY</th>
-                <th className="p-4"></th>
+                <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Date</th>
+                {user.role === 'admin' && <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Staff</th>}
+                <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Vibe</th>
+                <th className="p-6 text-[10px] font-black text-slate-400 uppercase">Time Span</th>
+                <th className="p-6 text-[10px] font-black text-slate-400 uppercase text-right">Payout</th>
+                <th className="p-6"></th>
               </tr>
             </thead>
             <tbody>
               {visibleShifts.slice().reverse().map(s => (
-                <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="p-4 font-semibold">{s.date}</td>
-                  {user.role === 'admin' && <td className="p-4 font-medium">{s.userName}</td>}
-                  <td className="p-4 text-slate-500 font-mono text-sm">{s.startTime}</td>
-                  <td className="p-4 text-slate-500 font-mono text-sm">{s.endTime}</td>
-                  <td className="p-4 text-slate-500">{s.hours}h</td>
-                  <td className="p-4 font-bold">{money(s.earned)}</td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => deleteShift(s.id)} className="text-red-400 text-xs font-bold">Delete</button>
-                  </td>
+                <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-all">
+                  <td className="p-6 font-bold">{s.date}</td>
+                  {user.role === 'admin' && <td className="p-6 text-slate-600 font-medium">{s.userName}</td>}
+                  <td className="p-6"><span className="px-3 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-black">{s.vibe || '❄️ Chill'}</span></td>
+                  <td className="p-6 text-slate-500 font-mono text-sm">{s.startTime} — {s.endTime} <span className="text-[10px] ml-1 bg-slate-100 px-1 rounded">({s.hours}h)</span></td>
+                  <td className="p-6 font-black text-slate-900 text-right">{money(s.earned)}</td>
+                  <td className="p-6 text-right"><button onClick={() => deleteShift(s.id)} className="text-slate-300 hover:text-red-400 font-bold transition-colors">×</button></td>
                 </tr>
               ))}
             </tbody>
