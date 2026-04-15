@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fire & Ice — AI Luxury Portal</title>
+<title>Fire & Ice — Luxury Staff Portal</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -22,12 +22,6 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: va
   background-clip: padding-box, border-box;
   box-shadow: 0 10px 40px rgba(0,0,0,0.04);
   border-radius: 24px;
-}
-
-/* AI Highlight Box */
-.ai-glow {
-  background: linear-gradient(to right, rgba(0, 212, 255, 0.05), rgba(255, 107, 43, 0.05));
-  border: 1px dashed #cbd5e1;
 }
 
 .shimmer-btn {
@@ -50,7 +44,7 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: va
 <script type="text/babel">
 const { useState, useEffect } = React;
 
-// --- UTILS & AI BRAIN ---
+// --- UTILS ---
 const money = (n) => '$' + (+(n || 0)).toFixed(2);
 
 const calcHours = (s, e) => {
@@ -60,16 +54,6 @@ const calcHours = (s, e) => {
   let mins = (eh * 60 + em) - (sh * 60 + sm);
   if (mins <= 0) mins += 1440;
   return Math.round(mins * 10 / 60) / 10;
-};
-
-const getAIAdvice = (totalEarned, shiftCount, role) => {
-  if (role === 'admin') {
-    if (totalEarned > 1000) return "🚀 Payouts are high this week. AI suggests reviewing the 'Party' vibes to see if you need more coal stock.";
-    return "💡 Business is steady. AI recommends a social media 'Fire Night' promo to fill mid-week gaps.";
-  } else {
-    if (shiftCount < 2) return "❄️ Your energy is preserved. AI suggests picking up a weekend shift to maximize your payout.";
-    return "🔥 You're trending as a top earner! AI suggests ensuring you're logging 'Busy' vibes to help the owner with analytics.";
-  }
 };
 
 const store = {
@@ -103,7 +87,7 @@ function downloadShiftsCSV(data, role) {
   const blob = new Blob([headers.join(",") + "\n" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `Fire_Ice_AI_Report.csv`;
+  link.download = `Fire_Ice_Staff_Report.csv`;
   link.click();
 }
 
@@ -150,7 +134,14 @@ function App() {
     const newShift = { id: Date.now(), userId: user.id, userName: user.name, date: shiftDate, startTime, endTime, hours: hrs, earned: hrs * user.rate, vibe: shiftVibe };
     const updated = [...shifts, newShift];
     setShifts(updated); store.set('shifts', updated);
-    alert("Session Ignited!");
+    alert("Session Recorded!");
+  };
+
+  const deleteShift = (id) => {
+    if(window.confirm("Delete record?")) {
+      const u = shifts.filter(s => s.id !== id);
+      setShifts(u); store.set('shifts', u);
+    }
   };
 
   const visibleShifts = user?.role === 'admin' ? shifts : shifts.filter(s => s.userId === user?.id);
@@ -172,7 +163,7 @@ function App() {
               <button onClick={handleLogin} className="shimmer-btn w-full">Enter Lounge</button>
             </div>
           ) : (
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4 text-left">
               <input type="text" placeholder="Full Name" className="input-field" required onChange={e => setRegName(e.target.value)} />
               <input type="email" placeholder="Email" className="input-field" required onChange={e => setRegEmail(e.target.value)} />
               <input type="password" placeholder="Password" className="input-field" required onChange={e => setRegPass(e.target.value)} />
@@ -191,37 +182,27 @@ function App() {
         <h2 className="text-2xl font-black tracking-tighter mb-10">FIRE & <span className="text-cyan-400">ICE</span></h2>
         <div className="flex-1 space-y-4">
           <div className="p-4 bg-slate-50 rounded-2xl border">
-            <p className="text-[10px] font-black text-slate-400 uppercase">Profile</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase">Account</p>
             <p className="font-extrabold">{user.name}</p>
+            <p className="text-xs text-orange-500 font-bold uppercase">{user.role}</p>
           </div>
         </div>
-        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-red-400">SIGN OUT</button>
+        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500">SIGN OUT</button>
       </aside>
 
       <main className="flex-1 p-8 md:p-16 max-w-6xl">
-        {/* AI ADVICE SECTION */}
-        <div className="lounge-card p-6 mb-10 ai-glow">
-          <div className="flex items-center gap-4">
-            <span className="text-2xl">🤖</span>
-            <div>
-              <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">AI Strategist Advice</p>
-              <p className="text-sm font-semibold text-slate-700">{getAIAdvice(totalEarned, visibleShifts.length, user.role)}</p>
-            </div>
-          </div>
-        </div>
-
         <header className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-black uppercase tracking-tighter">{user.role === 'admin' ? 'The Pulse' : 'Dashboard'}</h1>
-          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="px-5 py-2 border rounded-xl font-bold text-sm">📥 Export CSV</button>
+          <h1 className="text-4xl font-black uppercase tracking-tighter">{user.role === 'admin' ? 'Master Records' : 'My Dashboard'}</h1>
+          <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="px-5 py-2 border rounded-xl font-bold text-sm hover:border-orange-500 transition-all">📥 Export CSV</button>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
           <div className="lounge-card p-8 border-l-8 border-l-orange-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Earnings</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total {user.role === 'admin' ? 'Payouts' : 'Earned'}</p>
             <p className="text-5xl font-black">{money(totalEarned)}</p>
           </div>
           <div className="lounge-card p-8 border-l-8 border-l-cyan-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Records</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Records</p>
             <p className="text-5xl font-black">{visibleShifts.length}</p>
           </div>
         </div>
@@ -234,13 +215,13 @@ function App() {
               <input type="time" className="input-field" value={startTime} onChange={e => setStartTime(e.target.value)} />
               <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
-            <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex flex-wrap gap-4 items-center justify-between border-t pt-6">
               <div className="flex gap-2">
                 {['❄️ Chill', '🔥 Busy', '🎉 Party'].map(v => (
-                  <button key={v} onClick={() => setShiftVibe(v)} className={`px-4 py-2 rounded-xl text-xs font-bold border ${shiftVibe === v ? 'bg-slate-900 text-white' : 'bg-white'}`}>{v}</button>
+                  <button key={v} onClick={() => setShiftVibe(v)} className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${shiftVibe === v ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200'}`}>{v}</button>
                 ))}
               </div>
-              <button onClick={addShift} className="shimmer-btn">Ignite Shift</button>
+              <button onClick={addShift} className="shimmer-btn">Submit Shift</button>
             </div>
           </div>
         )}
@@ -252,20 +233,27 @@ function App() {
                 <th className="p-6 text-xs font-black text-slate-400">DATE</th>
                 {user.role === 'admin' && <th className="p-6 text-xs font-black text-slate-400">STAFF</th>}
                 <th className="p-6 text-xs font-black text-slate-400">VIBE</th>
-                <th className="p-6 text-xs font-black text-slate-400">HOURS</th>
-                <th className="p-6 text-xs font-black text-slate-400 text-right">TOTAL</th>
+                <th className="p-6 text-xs font-black text-slate-400">TIME</th>
+                <th className="p-6 text-xs font-black text-slate-400 text-right">PAYOUT</th>
+                <th className="p-6"></th>
               </tr>
             </thead>
             <tbody>
               {visibleShifts.slice().reverse().map(s => (
-                <tr key={s.id} className="border-b hover:bg-slate-50">
+                <tr key={s.id} className="border-b hover:bg-slate-50 transition-colors">
                   <td className="p-6 font-bold">{s.date}</td>
                   {user.role === 'admin' && <td className="p-6 font-medium text-slate-600">{s.userName}</td>}
                   <td className="p-6"><span className="px-3 py-1 bg-white border rounded-full text-[10px] font-black">{s.vibe}</span></td>
                   <td className="p-6 text-slate-500 font-mono text-sm">{s.startTime}-{s.endTime} ({s.hours}h)</td>
                   <td className="p-6 font-black text-right">{money(s.earned)}</td>
+                  <td className="p-6 text-right">
+                    <button onClick={() => deleteShift(s.id)} className="text-slate-300 hover:text-red-500 font-bold transition-colors">×</button>
+                  </td>
                 </tr>
               ))}
+              {visibleShifts.length === 0 && (
+                <tr><td colSpan="6" className="p-10 text-center text-slate-400 italic">No shifts recorded yet.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
