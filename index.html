@@ -13,7 +13,6 @@
 :root { --primary: #ff6b2b; --ice: #00d4ff; --bg: #ffffff; --text: #0f172a; --border: #e2e8f0; }
 body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); }
 
-/* Holographic Luxury Card */
 .lounge-card {
   background: white;
   border: 1px solid transparent;
@@ -44,9 +43,7 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: va
 <script type="text/babel">
 const { useState, useEffect } = React;
 
-// --- UTILS ---
 const money = (n) => '$' + (+(n || 0)).toFixed(2);
-
 const calcHours = (s, e) => {
   if (!s || !e) return 0;
   const [sh, sm] = s.split(':').map(Number);
@@ -61,7 +58,6 @@ const store = {
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-// --- EXCEL EXPORT ---
 function downloadShiftsCSV(data, role) {
   if (!data || !data.length) return alert("No shifts to export.");
   const headers = role === 'admin' 
@@ -87,11 +83,12 @@ function downloadShiftsCSV(data, role) {
   const blob = new Blob([headers.join(",") + "\n" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `Fire_Ice_Staff_Report.csv`;
+  link.download = `Fire_Ice_Report.csv`;
   link.click();
 }
 
-const ADMIN_USER = { id: 'admin-root', name: 'Srinath (Owner)', email: 'admin', password: 'admin123', role: 'admin', rate: 0 };
+// Admin Identity updated for privacy
+const ADMIN_USER = { id: 'admin-root', displayName: 'Lounge Owner', email: 'admin', password: 'admin123', role: 'admin', rate: 0 };
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('session') || 'null'));
@@ -120,10 +117,13 @@ function App() {
     e.preventDefault();
     const em = document.getElementById('logEmail').value.toLowerCase();
     const ps = document.getElementById('logPass').value;
+    
     if (em === 'admin' && ps === 'admin123') {
-      setUser(ADMIN_USER); localStorage.setItem('session', JSON.stringify(ADMIN_USER));
+      setUser(ADMIN_USER); 
+      localStorage.setItem('session', JSON.stringify(ADMIN_USER));
       return;
     }
+    
     const found = users.find(u => u.email === em && u.password === ps);
     if (found) { setUser(found); localStorage.setItem('session', JSON.stringify(found)); }
     else alert("Access Denied");
@@ -131,7 +131,7 @@ function App() {
 
   const addShift = () => {
     const hrs = calcHours(startTime, endTime);
-    const newShift = { id: Date.now(), userId: user.id, userName: user.name, date: shiftDate, startTime, endTime, hours: hrs, earned: hrs * user.rate, vibe: shiftVibe };
+    const newShift = { id: Date.now(), userId: user.id, userName: user.name || user.displayName, date: shiftDate, startTime, endTime, hours: hrs, earned: hrs * user.rate, vibe: shiftVibe };
     const updated = [...shifts, newShift];
     setShifts(updated); store.set('shifts', updated);
     alert("Session Recorded!");
@@ -178,21 +178,19 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
-      <aside className="w-full md:w-64 border-r p-8 flex flex-col">
+      <aside className="w-full md:w-64 border-r p-8 flex flex-col bg-white">
         <h2 className="text-2xl font-black tracking-tighter mb-10">FIRE & <span className="text-cyan-400">ICE</span></h2>
         <div className="flex-1 space-y-4">
-          <div className="p-4 bg-slate-50 rounded-2xl border">
-            <p className="text-[10px] font-black text-slate-400 uppercase">Account</p>
-            <p className="font-extrabold">{user.name}</p>
-            <p className="text-xs text-orange-500 font-bold uppercase">{user.role}</p>
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <p className="font-extrabold text-slate-800">{user.displayName || user.name}</p>
           </div>
         </div>
-        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500">SIGN OUT</button>
+        <button onClick={() => { localStorage.removeItem('session'); setUser(null); }} className="text-left text-sm font-bold text-slate-400 hover:text-red-500 transition-colors">SIGN OUT ⏻</button>
       </aside>
 
       <main className="flex-1 p-8 md:p-16 max-w-6xl">
         <header className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-black uppercase tracking-tighter">{user.role === 'admin' ? 'Master Records' : 'My Dashboard'}</h1>
+          <h1 className="text-4xl font-black uppercase tracking-tighter">{user.role === 'admin' ? 'Business Pulse' : 'My Dashboard'}</h1>
           <button onClick={() => downloadShiftsCSV(visibleShifts, user.role)} className="px-5 py-2 border rounded-xl font-bold text-sm hover:border-orange-500 transition-all">📥 Export CSV</button>
         </header>
 
@@ -202,7 +200,7 @@ function App() {
             <p className="text-5xl font-black">{money(totalEarned)}</p>
           </div>
           <div className="lounge-card p-8 border-l-8 border-l-cyan-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Records</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Shift Records</p>
             <p className="text-5xl font-black">{visibleShifts.length}</p>
           </div>
         </div>
@@ -251,9 +249,6 @@ function App() {
                   </td>
                 </tr>
               ))}
-              {visibleShifts.length === 0 && (
-                <tr><td colSpan="6" className="p-10 text-center text-slate-400 italic">No shifts recorded yet.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
